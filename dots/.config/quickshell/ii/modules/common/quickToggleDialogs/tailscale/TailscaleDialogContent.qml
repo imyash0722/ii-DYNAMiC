@@ -115,10 +115,11 @@ StyledFlickable {
         Rectangle {
             visible: TailscaleService.enabled && TailscaleService.errorMessage.length > 0
             Layout.fillWidth: true
-            implicitHeight: errorText.implicitHeight + 20
+            implicitHeight: errorLayout.implicitHeight + 20
             radius: Appearance.rounding.normal
             color: Appearance.colors.colErrorContainer
             RowLayout {
+                id: errorLayout
                 anchors.fill: parent
                 anchors.margins: 10
                 spacing: 10
@@ -133,6 +134,20 @@ StyledFlickable {
                     text: TailscaleService.errorMessage
                     color: Appearance.colors.colOnErrorContainer
                     wrapMode: Text.Wrap
+                }
+                RippleButton {
+                    Layout.preferredWidth: 28
+                    Layout.preferredHeight: 28
+                    buttonRadius: Appearance.rounding.full
+                    colBackground: "transparent"
+                    contentItem: MaterialSymbol {
+                        anchors.centerIn: parent
+                        text: "close"
+                        iconSize: Appearance.font.pixelSize.normal
+                        color: Appearance.colors.colOnErrorContainer
+                    }
+                    onClicked: TailscaleService.errorMessage = ""
+                    StyledToolTip { text: Translation.tr("Dismiss") }
                 }
             }
         }

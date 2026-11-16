@@ -27,6 +27,9 @@ class ThemeAndTailscaleContractTest(unittest.TestCase):
         # Health warnings such as firewall blocking should be detected
         self.assertIn("healthList.find", content, "Tailscale parseStatus should check healthList for blockers")
 
+        # Tailscale diagnostics must be bound to Config.options.tailscale.enableDiagnostics
+        self.assertIn("property bool diagnosticsEnabled: Config.options?.tailscale?.enableDiagnostics", content)
+
     def test_generate_colors_material_no_premature_exit(self):
         gen_path = os.path.join(ROOT_DIR, "dots/.config/quickshell/ii/scripts/colors/generate_colors_material.py")
         self.assertTrue(os.path.isfile(gen_path), f"File not found: {gen_path}")

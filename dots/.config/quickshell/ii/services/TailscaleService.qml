@@ -30,6 +30,7 @@ Singleton {
     property bool sshEnabled: Config.options?.tailscale?.ssh ?? false
     property list<string> advertiseRoutes: Config.options?.tailscale?.advertiseRoutes ?? []
     property bool advertiseExitNode: Config.options?.tailscale?.advertiseExitNode ?? false
+    property bool diagnosticsEnabled: Config.options?.tailscale?.enableDiagnostics ?? true
     property string permissionState: "unknown"
     property string diagnosticsText: ""
     property var netcheckData: ({})
@@ -126,7 +127,7 @@ Singleton {
     function logout(): void { if (!root.available) { root.setError(Translation.tr("Tailscale is unavailable")); return } root.loading = true; root.errorMessage = ""; root.enqueue("logout", ["tailscale", "logout"], null) }
     function openLoginUrl(): void { if (root.loginUrl) Quickshell.execDetached(["xdg-open", root.loginUrl]); else root.setError(Translation.tr("No Tailscale login URL is available")) }
     function setExitNode(nodeNameOrIp: string): void { root.currentExitNode = nodeNameOrIp || ""; if (Config.ready) Config.options.tailscale.exitNode = root.currentExitNode; if (root.active) root.enqueue("set", ["tailscale", "set", "--exit-node=" + root.currentExitNode], null) }
-    function netcheck(): void { if (!root.diagnosticsEnabled) { root.setError(Translation.tr("Tailscale diagnostics are disabled")); return } if (!root.available) { root.setError(Translation.tr("Tailscale is unavailable")); return } root.netcheckLoading = true; root.enqueue("netcheck", ["tailscale", "netcheck"], null) }
+    function netcheck(): void { if (!root.diagnosticsEnabled) { root.setError(Translation.tr("Tailscale diagnostics are disabled")); return } if (!root.available) { root.setError(Translation.tr("Tailscale is unavailable")); return } root.errorMessage = ""; root.netcheckLoading = true; root.enqueue("netcheck", ["tailscale", "netcheck"], null) }
     function setAcceptDns(value: bool): void { root.acceptDns = value; if (Config.ready) Config.options.tailscale.acceptDns = value; if (root.active) root.enqueue("set", ["tailscale", "set", "--accept-dns=" + (value ? "true" : "false")], null) }
     function setShieldsUp(value: bool): void { root.shieldsUp = value; if (Config.ready) Config.options.tailscale.shieldsUp = value; if (root.active) root.enqueue("set", ["tailscale", "set", "--shields-up=" + (value ? "true" : "false")], null) }
     function operationError(stderr: string, fallback: string): string {
