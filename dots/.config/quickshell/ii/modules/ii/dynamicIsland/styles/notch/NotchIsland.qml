@@ -249,26 +249,31 @@ Scope {
         root.dashboardRequested = true;
     }
 
-    IpcHandler {
-        target: "dynamicIsland"
+    readonly property bool isPrimaryIsland: !root.screenOverride || root.screenOverride.name === (Quickshell.screens.length > 0 ? Quickshell.screens[0].name : "")
 
-        function collapseToClock(): void {
-            root.collapseToClock();
-        }
-        function collapse(): void {
-            root.collapseToClock();
-        }
-        function openDashboard(): void {
-            root.openDashboard();
-        }
-        function closeDashboard(): void {
-            root.dismissDashboard();
-        }
-        function toggleDashboard(): void {
-            if (root.dashboardActive)
-                root.dismissDashboard();
-            else
+    Loader {
+        active: root.isPrimaryIsland
+        sourceComponent: IpcHandler {
+            target: "dynamicIsland"
+
+            function collapseToClock(): void {
+                GlobalStates.collapseDynamicIsland();
+            }
+            function collapse(): void {
+                GlobalStates.collapseDynamicIsland();
+            }
+            function openDashboard(): void {
                 root.openDashboard();
+            }
+            function closeDashboard(): void {
+                root.dismissDashboard();
+            }
+            function toggleDashboard(): void {
+                if (root.dashboardActive)
+                    root.dismissDashboard();
+                else
+                    root.openDashboard();
+            }
         }
     }
 
@@ -1283,8 +1288,11 @@ Scope {
     readonly property bool oledSaverHere: !!root.targetScreen
         && (GlobalStates.oledSaverMonitors ?? []).includes(root.targetScreen.name)
     property real oledFade: root.oledSaverHere ? 0 : 1
-    // The screen the island lives on: the focused one, or the pinned one.
+    property ShellScreen screenOverride: null
+    // The screen the island lives on: screenOverride if provided, otherwise the focused or pinned one.
     readonly property var targetScreen: {
+        if (root.screenOverride)
+            return root.screenOverride;
         if (!Config.options.bar.floatingNotch.onlyShowOnSingleMonitor) {
             const focused = Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : "";
             return Quickshell.screens.find(s => s.name === focused)
@@ -1819,6 +1827,7 @@ Scope {
             GlobalStates.islandWindow = null;
         if (root.centerInBar) {
             GlobalStates.reportTopShellHover("island_" + (win.screen ? win.screen.name : ""), false);
+            IslandGeometry.setCenterWidth(win.screen ? win.screen.name : "", 0);
         }
     }
     // An activity skipped because it was open gets its turn once the island closes.
@@ -2373,8 +2382,8 @@ Scope {
                 bodyWidth: notchBody.bodyWidth * container.scale
                 bodyHeight: notchBody.height * container.scale
                 bodyRadius: notchBody.bodyRadius * container.scale
-                reservedRight: (container.x || 0) + (container.width || 0) / 2 + (IslandGeometry.centerWidth || 0) / 2
-                reservedLeft: (container.x || 0) + (container.width || 0) / 2 - (IslandGeometry.centerWidth || 0) / 2
+                reservedRight: (Number(container.x) || 0) + (Number(container.width) || 0) / 2 + (Number(IslandGeometry.centerWidth) || 0) / 2
+                reservedLeft: (Number(container.x) || 0) + (Number(container.width) || 0) / 2 - (Number(IslandGeometry.centerWidth) || 0) / 2
                 surfaceColor: notchBody.color
                 shadowEnabled: notchBody.layer.enabled
                 cutAtEdge: root.sculptedFlare
@@ -2688,13 +2697,17 @@ Scope {
                 // reveal instead of with the width.
                 // The hold's swell counts as width: the bar's groups move aside for it
                 // the same way they do for an activity arriving.
-                value: root.centerInBar
-                    ? 2 * Math.round((root.pillShape
-                        // No shoulders on a pill: only the body takes room in the bar.
-                        ? (container.width - 2 * root.filletSize) * root.centerBarProgress
-                        : container.width) * container.scale / 2)
-                    : 0
+                value: root.publishedCenterWidth
                 restoreMode: Binding.RestoreBindingOrValue
+            }
+            readonly property real publishedCenterWidth: root.centerInBar
+                ? 2 * Math.round((root.pillShape
+                    // No shoulders on a pill: only the body takes room in the bar.
+                    ? (container.width - 2 * root.filletSize) * root.centerBarProgress
+                    : container.width) * container.scale / 2)
+                : 0
+            onPublishedCenterWidthChanged: {
+                IslandGeometry.setCenterWidth(win.screen ? win.screen.name : "", publishedCenterWidth);
             }
             // How far past the island each side's bubbles reach, so the bar keeps clear.
             Binding {

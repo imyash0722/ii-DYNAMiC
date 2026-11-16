@@ -76,6 +76,18 @@ ContentPage {
         }
 
         ConfigSwitch {
+            buttonIcon: "alt_route"
+            text: Translation.tr("Accept subnet routes")
+            checked: Config.options.tailscale.acceptRoutes
+            onCheckedChanged: {
+                Config.options.tailscale.acceptRoutes = checked;
+            }
+            StyledToolTip {
+                text: Translation.tr("Accepts routes to subnets advertised by other nodes on your Tailnet.")
+            }
+        }
+
+        ConfigSwitch {
             buttonIcon: "security"
             text: Translation.tr("Shields-up (block incoming)")
             checked: Config.options.tailscale.shieldsUp

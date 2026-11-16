@@ -301,6 +301,19 @@ StyledFlickable {
                     Layout.minimumWidth: 0
                     Layout.preferredWidth: 0
                     useDynamicRadius: false
+                    buttonIcon: "alt_route"
+                    text: Translation.tr("Accept routes")
+                    checked: TailscaleService.acceptRoutes
+                    onCheckedChanged: {
+                        if (checked !== TailscaleService.acceptRoutes)
+                            TailscaleService.setAcceptRoutes(checked)
+                    }
+                }
+                ConfigSwitch {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    Layout.preferredWidth: 0
+                    useDynamicRadius: false
                     buttonIcon: "terminal"
                     text: Translation.tr("Tailscale SSH")
                     checked: TailscaleService.sshEnabled

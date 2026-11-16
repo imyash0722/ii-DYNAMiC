@@ -18,17 +18,27 @@ class ThemeAndTailscaleContractTest(unittest.TestCase):
         # Tailscale up command should pass --reset and --timeout so it never fails on non-default flags or hangs
         self.assertIn('args.push("--reset")', content, "Tailscale buildUpCommand must include --reset")
         self.assertIn('args.push("--timeout=', content, "Tailscale buildUpCommand must specify a timeout")
+        self.assertIn('args.push("--accept-routes="', content, "Tailscale buildUpCommand must specify --accept-routes")
 
         # Toggles while active must use 'tailscale set'
         self.assertIn('root.enqueue("set", ["tailscale", "set", "--accept-dns="', content)
+        self.assertIn('root.enqueue("set", ["tailscale", "set", "--accept-routes="', content)
         self.assertIn('root.enqueue("set", ["tailscale", "set", "--shields-up="', content)
         self.assertIn('root.enqueue("set", ["tailscale", "set", "--ssh="', content)
 
         # Health warnings such as firewall blocking should be detected
         self.assertIn("healthList.find", content, "Tailscale parseStatus should check healthList for blockers")
 
-        # Tailscale diagnostics must be bound to Config.options.tailscale.enableDiagnostics
+        # Tailscale diagnostics must be bound to Config.options.tailscale.enableDiagnostics and quiet when disabled
         self.assertIn("property bool diagnosticsEnabled: Config.options?.tailscale?.enableDiagnostics", content)
+        self.assertNotIn('root.setError(Translation.tr("Tailscale diagnostics are disabled"))', content,
+                         "Disabled diagnostics must not raise an error banner")
+
+        # Config.qml must formally declare acceptRoutes
+        config_path = os.path.join(ROOT_DIR, "dots/.config/quickshell/ii/modules/common/Config.qml")
+        with open(config_path, "r", encoding="utf-8") as f:
+            cfg = f.read()
+        self.assertIn("property bool acceptRoutes:", cfg, "Config.qml must declare acceptRoutes under tailscale")
 
     def test_generate_colors_material_no_premature_exit(self):
         gen_path = os.path.join(ROOT_DIR, "dots/.config/quickshell/ii/scripts/colors/generate_colors_material.py")

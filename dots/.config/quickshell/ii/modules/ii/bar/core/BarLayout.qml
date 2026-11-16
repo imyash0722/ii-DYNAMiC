@@ -11,6 +11,9 @@ Item {
     id: root
     visible: false
 
+    property var screen: null
+    readonly property string screenName: screen ? screen.name : ""
+
     readonly property var _emptyLayout: []
     readonly property var fullModel: {
         const model = Config.options.bar.layouts.center;
@@ -24,9 +27,9 @@ Item {
     readonly property int centerIdx: root.backgroundStyle === 3 ? -1 : fullModel.findIndex(item => item.centered)
 
     readonly property var leftList: centerIdx === -1 ? root._emptyLayout : fullModel.slice(0, centerIdx)
-    // The centre is only surrendered when the island will actually be there. Reading the
-    // raw config surrendered it for bar styles the island refuses to draw in, which hid
-    // the user's centre widgets and put nothing in their place.
-    readonly property var centerList: IslandPolicy.centerInBar ? root._emptyLayout : (centerIdx === -1 ? fullModel.slice() : [fullModel[centerIdx]])
+    // The centre is only surrendered when the island will actually be there on this monitor.
+    // In multi-monitor setups with single-monitor pinning, secondary bars keep their center widgets.
+    readonly property bool islandAllowedHere: IslandPolicy.centerInBar && IslandPolicy.isScreenAllowed(root.screenName)
+    readonly property var centerList: islandAllowedHere ? root._emptyLayout : (centerIdx === -1 ? fullModel.slice() : [fullModel[centerIdx]])
     readonly property var rightList: centerIdx === -1 ? root._emptyLayout : fullModel.slice(centerIdx + 1)
 }

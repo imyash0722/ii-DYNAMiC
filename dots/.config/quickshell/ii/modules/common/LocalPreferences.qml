@@ -131,6 +131,7 @@ Singleton {
         "sidebar.booru.zerochan.username",
         "interactions.touchGestures.deviceId",
         "tailscale.exitNode",
+        "tailscale.acceptRoutes",
         "tailscale.advertiseRoutes",
         "vpn.defaultProfile",
         "vpn.defaultLocation",

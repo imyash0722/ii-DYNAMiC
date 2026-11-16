@@ -28,6 +28,24 @@ Singleton {
     property real centerWidth: 0
     property real centerHeight: 0
 
+    // Per-monitor island width mapping so multi-monitor setups keep independent bar gaps
+    property var centerWidths: ({})
+
+    function centerWidthFor(screenName) {
+        if (!screenName)
+            return root.centerWidth;
+        return root.centerWidths[screenName] ?? root.centerWidth;
+    }
+
+    function setCenterWidth(screenName, width) {
+        if (screenName && screenName !== "") {
+            let updated = Object.assign({}, root.centerWidths);
+            updated[screenName] = width;
+            root.centerWidths = updated;
+        }
+        root.centerWidth = width;
+    }
+
     /** 0..1 while an auto-hiding island retracts; the bar closes its side gaps with it. */
     property real reveal: 1
 

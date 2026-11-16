@@ -75,6 +75,33 @@ Singleton {
         return root.legacy.centerInBar === true;
     }
 
+    readonly property bool onlyShowOnSingleMonitor: {
+        if (!Config.ready)
+            return false;
+        if (root.modern && root.modern.monitor)
+            return root.modern.monitor.followFocus === false;
+        return (root.legacy && root.legacy.onlyShowOnSingleMonitor === true);
+    }
+
+    readonly property string singleMonitorName: {
+        if (!Config.ready)
+            return "";
+        if (root.modern && root.modern.monitor && root.modern.monitor.name)
+            return root.modern.monitor.name;
+        return (root.legacy && root.legacy.singleMonitorName) ? root.legacy.singleMonitorName : "";
+    }
+
+    function isScreenAllowed(screenName) {
+        if (!root.enabled)
+            return false;
+        if (!root.onlyShowOnSingleMonitor)
+            return true;
+        const target = root.singleMonitorName;
+        if (target && target !== "")
+            return screenName === target;
+        return screenName === (Quickshell.screens.length > 0 ? Quickshell.screens[0].name : "");
+    }
+
     /**
      * The outer shell: "notch" (attached to the edge), "sculpted" (a notch whose
      * sides are one long S) or "island" (a floating pill). Only the shell changes;

@@ -71,13 +71,14 @@ Item {
     // this pill lag behind the active window title (see the note above on content
     // resize vs mode resize).
     readonly property bool islandInBarCenter: IslandPolicy.centerInBar && BarInteraction.cornerStyle === 3
+        && IslandPolicy.isScreenAllowed(root.screen ? root.screen.name : "")
     readonly property real islandCenterGap: Appearance.sizes.hyprlandGapsOut
     // The island's own width closes when it hides, but its two side gaps stay: a hidden
     // island leaves the groups a small break in the middle instead of pressing them
     // together, and the gap never jumps at the end of the retract. Whole pixels; see
     // IslandGeometry.
     readonly property real islandReservedWidth: root.islandInBarCenter
-        ? Math.max(0, IslandGeometry.centerWidth + 2 * root.islandCenterGap)
+        ? Math.max(0, IslandGeometry.centerWidthFor(root.screen ? root.screen.name : "") + 2 * root.islandCenterGap)
         : 0
 
     // The island window is centred on screen, so the reserved gap has to be centred too.

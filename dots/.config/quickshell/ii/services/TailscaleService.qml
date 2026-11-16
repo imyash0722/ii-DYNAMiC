@@ -26,6 +26,7 @@ Singleton {
     property list<var> exitNodes: []
     property string currentExitNode: Config.options?.tailscale?.exitNode ?? ""
     property bool acceptDns: Config.options?.tailscale?.acceptDns ?? true
+    property bool acceptRoutes: Config.options?.tailscale?.acceptRoutes ?? true
     property bool shieldsUp: Config.options?.tailscale?.shieldsUp ?? false
     property bool sshEnabled: Config.options?.tailscale?.ssh ?? false
     property list<string> advertiseRoutes: Config.options?.tailscale?.advertiseRoutes ?? []
@@ -106,6 +107,7 @@ Singleton {
             args.push("--timeout=8s")
         }
         args.push("--accept-dns=" + (root.acceptDns ? "true" : "false"))
+        args.push("--accept-routes=" + (root.acceptRoutes ? "true" : "false"))
         args.push("--shields-up=" + (root.shieldsUp ? "true" : "false"))
         args.push("--ssh=" + (root.sshEnabled ? "true" : "false"))
         if (root.advertiseRoutes.length) args.push("--advertise-routes=" + root.advertiseRoutes.join(","))
@@ -127,8 +129,9 @@ Singleton {
     function logout(): void { if (!root.available) { root.setError(Translation.tr("Tailscale is unavailable")); return } root.loading = true; root.errorMessage = ""; root.enqueue("logout", ["tailscale", "logout"], null) }
     function openLoginUrl(): void { if (root.loginUrl) Quickshell.execDetached(["xdg-open", root.loginUrl]); else root.setError(Translation.tr("No Tailscale login URL is available")) }
     function setExitNode(nodeNameOrIp: string): void { root.currentExitNode = nodeNameOrIp || ""; if (Config.ready) Config.options.tailscale.exitNode = root.currentExitNode; if (root.active) root.enqueue("set", ["tailscale", "set", "--exit-node=" + root.currentExitNode], null) }
-    function netcheck(): void { if (!root.diagnosticsEnabled) { root.setError(Translation.tr("Tailscale diagnostics are disabled")); return } if (!root.available) { root.setError(Translation.tr("Tailscale is unavailable")); return } root.errorMessage = ""; root.netcheckLoading = true; root.enqueue("netcheck", ["tailscale", "netcheck"], null) }
+    function netcheck(): void { if (!root.diagnosticsEnabled) return; if (!root.available) { root.setError(Translation.tr("Tailscale is unavailable")); return } root.errorMessage = ""; root.netcheckLoading = true; root.enqueue("netcheck", ["tailscale", "netcheck"], null) }
     function setAcceptDns(value: bool): void { root.acceptDns = value; if (Config.ready) Config.options.tailscale.acceptDns = value; if (root.active) root.enqueue("set", ["tailscale", "set", "--accept-dns=" + (value ? "true" : "false")], null) }
+    function setAcceptRoutes(value: bool): void { root.acceptRoutes = value; if (Config.ready) Config.options.tailscale.acceptRoutes = value; if (root.active) root.enqueue("set", ["tailscale", "set", "--accept-routes=" + (value ? "true" : "false")], null) }
     function setShieldsUp(value: bool): void { root.shieldsUp = value; if (Config.ready) Config.options.tailscale.shieldsUp = value; if (root.active) root.enqueue("set", ["tailscale", "set", "--shields-up=" + (value ? "true" : "false")], null) }
     function operationError(stderr: string, fallback: string): string {
         const message = String(stderr || "").trim()

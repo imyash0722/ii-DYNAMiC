@@ -2922,6 +2922,7 @@ Singleton {
                 property bool enabled: false
                 property bool autoConnect: false
                 property bool acceptDns: true
+                property bool acceptRoutes: true
                 property bool shieldsUp: false
                 property bool ssh: false
                 property string exitNode: ""
