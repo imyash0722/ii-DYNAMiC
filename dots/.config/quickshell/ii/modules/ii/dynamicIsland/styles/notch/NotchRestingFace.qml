@@ -225,9 +225,15 @@ Item {
         return 0;
     }
 
+    property real workspaceWidth: 154
+
+    readonly property real baseClockSize: 16
+    readonly property real soloClockSize: Math.round(Math.min(face.restHeight * 0.52, face.baseClockSize * (face.workspaceWidth / 110)))
+    readonly property real clockSize: face.hasSides ? face.baseClockSize : face.soloClockSize
+
     readonly property real targetWidth: face.hasSides
-        ? face.leftEdge + face.leftWidth + clockMetrics.advanceWidth + face.rightWidth + face.rightEdge
-        : Math.max(110, clockMetrics.advanceWidth + 56)
+        ? Math.max(face.workspaceWidth, face.leftEdge + face.leftWidth + clockMetrics.advanceWidth + face.rightWidth + face.rightEdge)
+        : Math.max(face.workspaceWidth, clockMetrics.advanceWidth + 56)
 
     FontLoader {
         id: clockFont
@@ -235,7 +241,6 @@ Item {
     }
     readonly property string clockFamily: clockFont.status === FontLoader.Ready && clockFont.name
         ? clockFont.name : Appearance.font.family.main
-    readonly property real clockSize: 16
 
     TextMetrics {
         id: clockMetrics
@@ -263,6 +268,10 @@ Item {
         font.weight: Font.Bold
         // Figures that do not shift the time as a digit changes.
         font.features: ({ "tnum": 1 })
+
+        Behavior on font.pixelSize {
+            animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(clock)
+        }
     }
 
     /**
