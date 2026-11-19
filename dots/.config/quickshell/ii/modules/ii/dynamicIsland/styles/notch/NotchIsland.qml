@@ -1321,7 +1321,7 @@ Scope {
 
     readonly property bool localIslandRevealed: root.edgeRevealed || hoverIntent.hovered || root.hoverLinger
         || root.eventRevealed || root.hasUrgentActivity || root.anyBubbleHovered || (root.expandedBubbleId !== "")
-        || root.searchActive || root.wallpaperActive || root.sessionActive || root.dashboardPinned || root.windowSwitcherActive
+        || root.searchActive || root.wallpaperActive || root.sessionActive || root.dashboardActive || root.dashboardPinned || root.windowSwitcherActive
         || root.askpassActive || (controller.sources.askpass && controller.sources.askpass.active)
         || (root.preferClockFace && root.islandShellHovered)
 
@@ -1342,7 +1342,7 @@ Scope {
     readonly property bool hidden: {
         // Alt+Tab included: over a fullscreen window and under auto-hide alike, the
         // switcher is the reason the user is looking at the island.
-        if (root.searchActive || root.wallpaperActive || root.sessionActive || root.dashboardPinned
+        if (root.searchActive || root.wallpaperActive || root.sessionActive || root.dashboardActive || root.dashboardPinned
                 || root.windowSwitcherActive)
             return false;
         // A password prompt is never hidden: not by auto-hide, not by a fullscreen window.
@@ -2533,6 +2533,9 @@ Scope {
             height: (root.centerInBar && !BarInteraction.autoHide && !root.pillShape) ? root.centerBarProgress * container.animatedHeight : container.animatedHeight
 
             y: {
+                const isOverlay = root.dashboardActive || root.expanded || root.searchActive
+                    || root.wallpaperActive || root.sessionActive || root.askpassActive
+                    || root.colorPickerActive || root.displayModesActive || root.localSendRequestActive;
                 if (root.pillShape) {
                     let shown = root.pillInset;
                     if (!root.centerInBar && root.hasTopBar)
@@ -2543,14 +2546,14 @@ Scope {
                         shown += Config.options.appearance.wrappedFrameThickness;
                     const away = -container.height - 10;
                     if (root.centerInBar)
-                        return shown - root.barHiddenAmount;
+                        return isOverlay ? shown : (shown - root.barHiddenAmount);
                     return root.hidden ? away : shown;
                 }
                 if (root.centerInBar) {
                     let shown = 0;
                     if (root.usingWrappedFrame)
                         shown += Config.options.appearance.wrappedFrameThickness;
-                    return shown - root.barHiddenAmount;
+                    return isOverlay ? shown : (shown - root.barHiddenAmount);
                 }
                 if (root.hidden && !root.centerInBar)
                     return -root.targetHeight - 10;

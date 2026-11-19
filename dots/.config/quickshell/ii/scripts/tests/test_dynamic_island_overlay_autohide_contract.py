@@ -49,6 +49,8 @@ class DynamicIslandOverlayAutohideContractTests(unittest.TestCase):
     def test_notch_island_translates_with_bar_hidden_amount(self):
         self.assertIn("barHiddenAmount", NOTCH_ISLAND)
         self.assertIn("shown - root.barHiddenAmount", NOTCH_ISLAND)
+        self.assertIn("isOverlay ? shown : (shown - root.barHiddenAmount)", NOTCH_ISLAND)
+        self.assertIn("root.dashboardActive || root.dashboardPinned", NOTCH_ISLAND)
         self.assertIn("GlobalStates.islandInBarRevealed", NOTCH_ISLAND)
         self.assertIn("GlobalStates.topShellRevealed", NOTCH_ISLAND)
         self.assertIn("GlobalStates.reportTopShellHover", NOTCH_ISLAND)
