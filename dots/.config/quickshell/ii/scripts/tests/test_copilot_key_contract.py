@@ -18,6 +18,7 @@ Validates that:
 """
 
 from pathlib import Path
+import re
 import unittest
 
 REPO_ROOT = Path(__file__).resolve().parents[6]
@@ -42,11 +43,31 @@ class CopilotKeyContractTests(unittest.TestCase):
             'hl.bind("F23", hl.dsp.global("quickshell:dynamicIslandDashboardToggle")',
             self.keybinds,
         )
+        self.assertIn(
+            'hl.bind("XF86Assistant", hl.dsp.global("quickshell:dynamicIslandDashboardToggle")',
+            self.keybinds,
+        )
+        self.assertIn(
+            'hl.bind("code:201", hl.dsp.global("quickshell:dynamicIslandDashboardToggle")',
+            self.keybinds,
+        )
+        self.assertIn(
+            'hl.bind("SUPER + SHIFT + code:201", hl.dsp.global("quickshell:dynamicIslandDashboardToggle")',
+            self.keybinds,
+        )
         self.assertNotIn("XF86CoPilot", self.keybinds)
         self.assertIn(
             'description = "Dynamic Island: Toggle widgets dashboard"',
             self.keybinds,
         )
+
+        # XF86TouchpadOff must not ignore mods so it never steals Copilot keyevents
+        off_match = re.search(
+            r'hl\.bind\("XF86TouchpadOff",\s*hl\.dsp\.exec_cmd\([^)]+\),\s*\{([^}]+)\}\)',
+            self.keybinds,
+        )
+        self.assertIsNotNone(off_match, "Could not find active XF86TouchpadOff bind definition")
+        self.assertNotIn("ignore_mods = true", off_match.group(1))
 
     def test_global_states_declares_shortcut_and_signal(self):
         self.assertIn("signal toggleIslandDashboardRequested()", self.global_states)

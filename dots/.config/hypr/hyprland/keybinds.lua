@@ -42,10 +42,22 @@ hl.bind("SUPER + ALT + A", hl.dsp.global("quickshell:sidebarLeftToggleDetach"))
 hl.bind("SUPER + B", hl.dsp.global("quickshell:sidebarLeftToggle"))
 hl.bind("SUPER + O", hl.dsp.global("quickshell:sidebarLeftToggle"))
 hl.bind("SUPER + N", hl.dsp.global("quickshell:sidebarRightToggle"), { description = "Shell: Toggle right sidebar" })
--- Dynamic Island: Copilot key toggles widgets dashboard (hardware emits Super+Shift+F23 or standalone F23)
+-- Dynamic Island: Copilot key toggles widgets dashboard
+-- Hardware emits Super+Shift+F23 (KEY_F23 = evdev 193 -> XKB code:201).
+-- In XKB (symbols/inet), keycode 201 resolves to XF86Assistant under Shift+Super, or legacy
+-- XF86TouchpadOff / F23 on standard PC layouts. Bind both keysyms and raw keycodes so all variants
+-- cleanly open Dynamic Island.
 hl.bind("SUPER + SHIFT + F23", hl.dsp.global("quickshell:dynamicIslandDashboardToggle"),
     { description = "Dynamic Island: Toggle widgets dashboard" })
 hl.bind("F23", hl.dsp.global("quickshell:dynamicIslandDashboardToggle"),
+    { description = "Dynamic Island: Toggle widgets dashboard" })
+hl.bind("XF86Assistant", hl.dsp.global("quickshell:dynamicIslandDashboardToggle"),
+    { description = "Dynamic Island: Toggle widgets dashboard" })
+hl.bind("SUPER + SHIFT + XF86Assistant", hl.dsp.global("quickshell:dynamicIslandDashboardToggle"),
+    { description = "Dynamic Island: Toggle widgets dashboard" })
+hl.bind("code:201", hl.dsp.global("quickshell:dynamicIslandDashboardToggle"),
+    { description = "Dynamic Island: Toggle widgets dashboard" })
+hl.bind("SUPER + SHIFT + code:201", hl.dsp.global("quickshell:dynamicIslandDashboardToggle"),
     { description = "Dynamic Island: Toggle widgets dashboard" })
 --##! Modules
 hl.bind("SUPER + Slash", hl.dsp.global("quickshell:cheatsheetToggle"), { description = "Shell: Toggle cheatsheet" })
@@ -96,9 +108,10 @@ hl.bind("Num_Lock", hl.dsp.global("quickshell:osdNumLock"),
 hl.bind("XF86TouchpadToggle", hl.dsp.exec_cmd(hyprScripts .. "/touchpad-toggle.sh"),
     { locked = true, ignore_mods = true, description = "Input: Toggle touchpad" })
 hl.bind("XF86TouchpadOn", hl.dsp.exec_cmd(hyprScripts .. "/touchpad-toggle.sh on"),
-    { locked = true, ignore_mods = true }) -- # [hidden]
+    { locked = true }) -- # [hidden]
+-- Note: XF86TouchpadOff must NOT have ignore_mods = true so it never collides with or steals Copilot key events
 hl.bind("XF86TouchpadOff", hl.dsp.exec_cmd(hyprScripts .. "/touchpad-toggle.sh off"),
-    { locked = true, ignore_mods = true }) -- # [hidden]
+    { locked = true }) -- # [hidden]
 --##! Media
 hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 2%+ -l 1.5"),
     { locked = true, repeating = true, ignore_mods = true })
