@@ -142,6 +142,21 @@ Item {
         return (payload && payload.ssid) ? payload.ssid : "";
     }
     property var workspaceWidgetRef: null
+    readonly property real workspaceTargetWidth: {
+        if (content.workspaceWidgetRef && content.workspaceWidgetRef.contentWidth > 0)
+            return Math.max(60, content.workspaceWidgetRef.contentWidth
+                + Math.max(8, content.restingHeight - content.workspaceWidgetRef.contentHeight));
+        return 154;
+    }
+
+    Loader {
+        id: workspacePrefetchLoader
+        active: true
+        visible: false
+        width: 0
+        height: 0
+        source: Quickshell.shellPath("modules/ii/dynamicIsland/widgets/FloatingNotchWorkspaces.qml")
+    }
 
     readonly property bool isSearch: content.displayedId === "search"
     readonly property bool isOsd: content.displayedId === "osd"
@@ -1039,6 +1054,7 @@ Item {
             restHeight: content.restingHeight
             sportsGame: content.controller.sources.sports.liveGame
             phoneLive: content.controller.sources.phoneLive.current
+            workspaceWidth: content.workspaceTargetWidth
             visible: !content.hasWidget && !content.isSearch && !content.isOsd && !content.isWallpaper
                 && !content.isSession && !content.isColorPicker && !content.isDisplayModes
                 && !content.isLocalSendRequest && !content.isAskpass

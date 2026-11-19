@@ -76,13 +76,23 @@ Item {
     }
 
     readonly property string widestLabel: {
-        let widest = "";
+        // Reserve width for at least a two-digit workspace numeral (e.g. "10") so that
+        // groups 1..5 and 6..10 share the exact same consistent slot size and the
+        // Dynamic Island maintains its lengthier size without shrinking on workspaces 1..5.
+        let widest = wsModel.labelFor(10) || "10";
+        if (widest.length < 2)
+            widest = "10";
+        for (let id = 1; id <= 10; id++) {
+            const label = wsModel.labelFor(id);
+            if (label.length > widest.length)
+                widest = label;
+        }
         for (const wsId of wsModel.visibleIds) {
             const label = wsModel.labelFor(wsId);
             if (label.length > widest.length)
                 widest = label;
         }
-        return widest === "" ? "0" : widest;
+        return widest;
     }
 
     // Measured, never drawn.
