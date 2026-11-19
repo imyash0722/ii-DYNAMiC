@@ -33,6 +33,8 @@ AndroidWidgetTileBase {
     id: root
 
     tooltipText: Translation.tr("System resources")
+    surfaceRadius: Config.options.appearance.sharpMode ? 0
+        : Math.round(Math.min(surface.width / 2, surface.height / 2, Appearance.rounding.large) * 0.5)
 
     readonly property bool gpuDetected: ResourceUsage.gpuVendor !== "unknown"
     readonly property var allMetrics: ["cpu", "ram", "disk", root.gpuDetected ? "gpu" : "swap"]
@@ -107,8 +109,8 @@ AndroidWidgetTileBase {
 
                 metric: modelData
                 radius: Config.options.appearance.sharpMode ? 0
-                    : Math.min(root.arrangement.cardWidth / 2, root.arrangement.cardHeight / 2,
-                        Appearance.rounding.normal)
+                    : Math.round(Math.min(root.arrangement.cardWidth / 2, root.arrangement.cardHeight / 2,
+                        Appearance.rounding.normal) * 0.5)
             }
         }
     }

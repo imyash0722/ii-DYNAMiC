@@ -23,6 +23,7 @@ BAR_CONFIG = (ROOT / "modules/settings/configs/BarConfig.qml").read_text(encodin
 INDEX_WORKSPACES = (ROOT / "modules/ii/bar/widgets/workspaces/IndexWorkspaces.qml").read_text(encoding="utf-8")
 NOTCH_CONTENT = (ROOT / "modules/ii/dynamicIsland/styles/notch/NotchContent.qml").read_text(encoding="utf-8")
 NOTCH_RESTING_FACE = (ROOT / "modules/ii/dynamicIsland/styles/notch/NotchRestingFace.qml").read_text(encoding="utf-8")
+SYSTEM_RESOURCES = (ROOT / "modules/common/quickToggles/androidStyle/resources/AndroidSystemResourcesToggle.qml").read_text(encoding="utf-8")
 SHELL_UPDATES = (ROOT / "services/ShellUpdates.qml").read_text(encoding="utf-8")
 SETUP_SCRIPT_PATH = ROOT.parents[3] / "setup-ii-p3drovfx.sh"
 SETUP_SCRIPT = SETUP_SCRIPT_PATH.read_text(encoding="utf-8") if SETUP_SCRIPT_PATH.exists() else ""
@@ -82,6 +83,10 @@ class DynamicIslandEscapeAndSettingsContractTests(unittest.TestCase):
         self.assertIn('property real workspaceWidth:', NOTCH_RESTING_FACE)
         self.assertIn('readonly property real soloClockSize:', NOTCH_RESTING_FACE)
         self.assertIn('Behavior on font.pixelSize {', NOTCH_RESTING_FACE)
+
+    def test_system_resources_widget_50_percent_roundness(self):
+        self.assertIn("Appearance.rounding.large) * 0.5", SYSTEM_RESOURCES)
+        self.assertIn("Appearance.rounding.normal) * 0.5", SYSTEM_RESOURCES)
 
 
 if __name__ == "__main__":
