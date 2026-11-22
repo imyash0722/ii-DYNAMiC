@@ -1,6 +1,6 @@
-# Changelog & Architectural Enhancements: ii-p3drovfx-dynamic-island
+# Changelog & Architectural Enhancements: ii-DYNAMiC$
 
-This document details all architectural improvements, autohide engine rebuilds, keyboard interactions, upstream merges, and installer adaptations implemented in this fork (**ii-p3drovfx-dynamic-island**).
+This document details all architectural improvements, autohide engine rebuilds, keyboard interactions, upstream merges, and installer adaptations implemented in this fork (**ii-DYNAMiC$**).
 
 ---
 
@@ -20,17 +20,18 @@ Successfully merged upstream `P3DROVFX/ii-p3drovfx@dev` with zero conflicts, bri
 
 Adapted `setup-ii-p3drovfx.sh`, `ShellUpdates.qml`, `AboutConfig.qml`, and `README.md` to ensure that installing or updating directly from this repository works seamlessly out of the box:
 - **Preset & Fallback Configuration**:
-  - Added preset `dynamic-island` pointing to `https://github.com/imyash0722/ii-p3drovfx-dynamic-island` branch `dev`.
-  - Configured alias `mine` to point to `https://github.com/imyash0722/ii-p3drovfx-dynamic-island`.
-  - Set `FALLBACK_URL="https://github.com/imyash0722/ii-p3drovfx-dynamic-island"` and `FALLBACK_BRANCH="dev"`.
+  - Added preset `dynamic` and `dynamic-island` pointing to `https://github.com/imyash0722/ii-DYNAMiC-` branch `dev`.
+  - Configured alias `mine` to point to `https://github.com/imyash0722/ii-DYNAMiC-`.
+  - Set `FALLBACK_URL="https://github.com/imyash0722/ii-DYNAMiC-"` and `FALLBACK_BRANCH="dev"`.
+  - Preserved canonical fallback resolution for legacy URL `https://github.com/imyash0722/ii-p3drovfx-dynamic-island`.
   - Updated `upstream` and `p3drovfx` preset branches to `dev`.
 - **Protected Files Extension**:
   - Registered `modules/common/widgets/NotificationAppIcon.qml` in `PROTECTED_PATTERNS` so upstream or external updates never overwrite the glyph sanitization fix.
 - **Dynamic Fork Labeling in UI**:
-  - Updated `ShellUpdates.qml` to display `ii-p3drovfx-dynamic-island` for the active fork.
+  - Updated `ShellUpdates.qml` to display `ii-DYNAMiC$` for the active fork.
   - Dynamically bound "This fork" and GitHub links in `AboutConfig.qml` and `WelcomeProjectLinks.qml` to the active remote repository.
 - **Clone Instructions**:
-  - Updated main `README.md` and `.github/README.md` install instructions to clone `https://github.com/imyash0722/ii-p3drovfx-dynamic-island.git`.
+  - Updated main `README.md` and `.github/README.md` install instructions to clone `https://github.com/imyash0722/ii-DYNAMiC-.git`.
 
 ---
 

@@ -69,11 +69,12 @@ class DynamicIslandEscapeAndSettingsContractTests(unittest.TestCase):
         self.assertIn("Config.options.bar.floatingNotch.autoHide = checked;", BAR_CONFIG)
 
     def test_installer_and_updates_configuration(self):
-        self.assertIn('["dynamic-island"]="https://github.com/imyash0722/ii-p3drovfx-dynamic-island"', SETUP_SCRIPT)
-        self.assertIn('FALLBACK_URL="https://github.com/imyash0722/ii-p3drovfx-dynamic-island"', SETUP_SCRIPT)
+        self.assertIn('["dynamic-island"]="https://github.com/imyash0722/ii-DYNAMiC-"', SETUP_SCRIPT)
+        self.assertIn('["https://github.com/imyash0722/ii-p3drovfx-dynamic-island"]="dynamic-island"', SETUP_SCRIPT)
+        self.assertIn('FALLBACK_URL="https://github.com/imyash0722/ii-DYNAMiC-"', SETUP_SCRIPT)
         self.assertIn('FALLBACK_BRANCH="dev"', SETUP_SCRIPT)
         self.assertIn('case "dynamic-island":', SHELL_UPDATES)
-        self.assertIn('"ii-p3drovfx-dynamic-island"', SHELL_UPDATES)
+        self.assertIn('"ii-DYNAMiC$"', SHELL_UPDATES)
 
     def test_dynamic_island_uniform_workspace_and_clock_scaling(self):
         self.assertIn('let widest = wsModel.labelFor(10) || "10";', INDEX_WORKSPACES)

@@ -126,7 +126,11 @@ Singleton {
     function forkLabel(fork) {
         switch (fork) {
         case "dynamic-island":
-            return "ii-p3drovfx-dynamic-island";
+        case "dynamic":
+        case "ii-dynamic":
+        case "ii-DYNAMiC":
+        case "ii-DYNAMiC-":
+            return "ii-DYNAMiC$";
         case "p3drovfx":
         case "mine":
             return "II-P3DROVFX";
@@ -136,7 +140,11 @@ Singleton {
         case "upstream":
             return "ii-vynx";
         default:
-            return root.githubSlug(root.activeRemote) || fork || Translation.tr("Unknown fork");
+            const slug = root.githubSlug(root.activeRemote);
+            if (slug.includes("ii-DYNAMiC") || slug.includes("dynamic-island")) {
+                return "ii-DYNAMiC$";
+            }
+            return slug || fork || Translation.tr("Unknown fork");
         }
     }
 

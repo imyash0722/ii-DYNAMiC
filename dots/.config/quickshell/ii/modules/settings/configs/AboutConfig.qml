@@ -920,12 +920,12 @@ Item {
                     topLeftRadius: Appearance.rounding.large
                     title: Translation.tr("This fork")
                     icon: "call_split"
-                    name: ShellUpdates.forkLabel(ShellUpdates.activeFork) || "II-P3DROVFX"
-                    url: ShellUpdates.activeRemote || "https://github.com/imyash0722/ii-p3drovfx-dynamic-island"
+                    name: ShellUpdates.forkLabel(ShellUpdates.activeFork) || "ii-DYNAMiC$"
+                    url: ShellUpdates.activeRemote || "https://github.com/imyash0722/ii-DYNAMiC-"
                     links: [
-                        { "icon": "code", "label": Translation.tr("GitHub"), "url": ShellUpdates.activeRemote || "https://github.com/imyash0722/ii-p3drovfx-dynamic-island" },
+                        { "icon": "code", "label": Translation.tr("GitHub"), "url": ShellUpdates.activeRemote || "https://github.com/imyash0722/ii-DYNAMiC-" },
                         { "icon": "auto_stories", "label": Translation.tr("Wiki"), "url": "https://github.com/P3DROVFX/ii-p3drovfx/wiki" },
-                        { "icon": "adjust", "label": Translation.tr("Issues"), "url": (ShellUpdates.activeRemote || "https://github.com/imyash0722/ii-p3drovfx-dynamic-island") + "/issues", "fill": false }
+                        { "icon": "adjust", "label": Translation.tr("Issues"), "url": (ShellUpdates.activeRemote || "https://github.com/imyash0722/ii-DYNAMiC-") + "/issues", "fill": false }
                     ]
                     logo: Image {
                         anchors.fill: parent

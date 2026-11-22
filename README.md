@@ -1,241 +1,159 @@
 <div align="center">
 
-<img src=".github/assets/readme/logo-banner.png" alt="ii-p3drovfx" />
+# ii-DYNAMiC$
 
-<br><br>
+```
+=====================================================
+                      UPCOMING~                      
+=====================================================
+```
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/readme/subtitle-dark.png" />
-  <source media="(prefers-color-scheme: light)" srcset=".github/assets/readme/subtitle-light.png" />
-  <img src=".github/assets/readme/subtitle-dark.png" width="692" alt="A material 3 expressive shell for Hyprland" />
-</picture>
-
-<br><br>
-
-
-
-https://github.com/user-attachments/assets/9bd6d47c-a6af-4352-8cf0-1819a526230f
-
-
+**A Material 3 Expressive desktop environment for Hyprland, powered by Quickshell.**
 
 </div>
 
 <br>
 
-A heavily customized fork of **[ii-vynx](https://github.com/vaguesyntax/ii-vynx)**, itself built on **[illogical-impulse](https://github.com/end-4/dots-hyprland)**. Every surface follows **Material 3 Expressive**: shapes that morph with state, variable type that carries the hierarchy, and a palette generated from your wallpaper by Matugen. It runs on **[Quickshell](https://quickshell.org/)** and **[Hyprland](https://hypr.land/)**.
+A customized fork of **[ii-p3drovfx](https://github.com/P3DROVFX/ii-p3drovfx)** (itself derived from **[ii-vynx](https://github.com/vaguesyntax/ii-vynx)** and **[illogical-impulse](https://github.com/end-4/dots-hyprland)**). Every surface follows **Material 3 Expressive**: fluid state-morphing shapes, expressive typography, and dynamic palette generation driven by Matugen.
 
-> [!WARNING]
-> This is my personal setup. It isn't focused on performance or stability, so expect bugs. Report them in an issue or in the ii-p3drovfx thread on the **[end-4 Discord](https://discord.gg/GtdRBXgMwq)**. PRs are welcome.
+---
 
-## Built-in apps
+<div align="center">
 
-<!-- PLACEHOLDER — bento grid 1 (Figma): Clock, EasyEffects, Modes & Routines, App usage,
-     Cheatsheet: Timetable, Keybinds, Typing test, Dev tools.
-     Export at 1840 px wide, one dark and one light version:
-     .github/assets/readme/bento-apps-dark.png / .github/assets/readme/bento-apps-light.png -->
-<picture>
-  <img src=".github/assets/readme/bento-grid1.png" width="100%" alt="Clock, EasyEffects, Modes & Routines, App usage, and the Cheatsheet's Timetable, Keybinds, Typing test and Dev tools" />
-</picture>
+### UPCOMING~
 
-**Clock** has alarms, world clock, timers, pomodoro and bedtime. **EasyEffects** has presets and effects for every output. **Modes & Routines** runs your automations, and **App usage** tracks screen time and daily limits. The **Cheatsheet** holds a calendar that syncs with Google, Outlook and ICS, an editable keybind library, a typing test and offline developer tools.
+</div>
 
-## Lock screen & theming
+## Key Architectural Highlights
 
-<table>
-  <tr>
-    <td width="50%"><img src=".github/assets/readme/lockscreen-aod.gif" width="100%" alt="Locking the session, switching to Always On Display and unlocking" /></td>
-    <td width="50%"><img src=".github/assets/readme/wallpaper-theming.gif" width="100%" alt="Changing wallpapers recolours the whole shell" /></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Lock screen & Always On Display</b><br><sub>Desktop widgets follow you onto the lock screen. The AOD keeps them on a black screen.</sub></td>
-    <td align="center"><b>A palette for every wallpaper</b><br><sub>Matugen schemes or built-in themes, applied across the bar, island, widgets and apps.</sub></td>
-  </tr>
-</table>
+- **Dynamic Island**:
+  - **Instant Collapse**: Pressing **`Esc`** while expanded collapses the island directly to its compact, resting time-only clock face.
+  - **Type-to-Search**: Seamless app search from the island dashboard without extra search bars cluttering resting states.
+  - **Uniform Scaling**: Optical alignment and synchronized width transitions between workspaces and the resting clock.
+  - **Live Overlays**: Contextual controls for media playback, volume, brightness, battery, and system activities.
+- **Rebuilt Top Shell Autohide Engine**:
+  - Centralized hover bus in `GlobalStates.qml` eliminates top-edge cursor oscillation and panel jitter.
+  - **Window Overlay Mode**: When `pushWindows: false` is set in Settings, the top bar and island smoothly slide above windows without resizing tiles or triggering desktop reflow.
+- **Notification Sanitization**:
+  - Strict pattern filtering prevents internal file paths (e.g. `.SCOPED_DIR...`) from rendering as broken oversized font glyphs.
+- **Hardware Bindings Protection**:
+  - Touchpad toggle, audio mute, mic mute, and volume controls run with `ignore_mods = true` so laptop hardware switches always register.
+
+---
+
+<div align="center">
+
+### UPCOMING~
+
+</div>
+
+## Built-in Apps & Tools
+
+- **Clock**: Alarms, world clock, timers, pomodoro counter, and bedtime routines.
+- **EasyEffects**: Dedicated audio profiles and presets for headphones and speakers.
+- **Modes & Routines**: Profile automation and display modes.
+- **Cheatsheet**: Integrated calendar with Google/Outlook/ICS sync, interactive keybind library, typing test, and offline dev tools.
+- **Companion Bridge (`ii-tools`)**: Phone pairing over LAN/Tailscale, interactive screen mirroring, touchpad, camera, microphone, and shared clipboard.
+- **Live Draw**: Screen annotation, spotlighting, and instant capture.
+
+---
 
 ## Requirements
 
 - **Hyprland 0.56.1 or newer**
 - **Matugen 4.1.0 or newer**
-- **quickshell-git 0.3.0 or newer**
+- **quickshell-git 0.3.0 or newer** (or patched `quickshell-ii-git`)
+
+---
 
 ## Installation
 
-### Default installation
+### Default Installation (Full Setup)
 
-Use this if you don't have illogical-impulse installed yet. It sets up the base
-dotfiles and everything they need, then puts my config on top.
+Installs the base dotfiles and applies the **ii-DYNAMiC$** configuration:
 
 ```bash
-git clone --recurse-submodules https://github.com/imyash0722/ii-p3drovfx-dynamic-island.git
-cd ii-p3drovfx-dynamic-island
+git clone --recurse-submodules https://github.com/imyash0722/ii-DYNAMiC-.git
+cd ii-DYNAMiC-
 ./setup-ii-p3drovfx.sh install
 ```
 
-### Minimal installation (Quickshell config only)
+### Minimal Installation (Quickshell Config Only)
 
-Use this if illogical-impulse already works and you only want my Quickshell config.
-Nothing else is touched, and your current config is moved to a backup instead of deleted.
+If you already have illogical-impulse dotfiles configured and only want the shell:
 
 ```bash
-git clone --recurse-submodules https://github.com/imyash0722/ii-p3drovfx-dynamic-island.git
-cd ii-p3drovfx-dynamic-island
+git clone --recurse-submodules https://github.com/imyash0722/ii-DYNAMiC-.git
+cd ii-DYNAMiC-
 ./setup-ii-p3drovfx.sh
 ```
 
-> [!NOTE]
-> Some modules, like the Gmail client, need API keys set up by hand.
+---
 
-## Documentation
+## Updating
 
-The **[ii-p3drovfx wiki](https://github.com/P3DROVFX/ii-p3drovfx/wiki)** describes every component in detail.
+Update effortlessly from within the shell (**Settings → About**) or directly from the terminal:
 
-<details> <summary><strong>🛠 Common Issues</strong></summary>
+```bash
+./setup-ii-p3drovfx.sh update
+```
+
+The shell update checker and installer automatically recognize `ii-DYNAMiC$` and keep all customizations and hardware protections preserved across updates.
+
+---
+
+<details>
+<summary><strong>🛠 Troubleshooting & Common Fixes</strong></summary>
 
 <br>
 
-### Dynamic colors / Matugen are not working
-
-If wallpaper colors are not being applied and you see an error such as:
-
-> matugen exited with an error, so the shell kept its previous palette.
-
-First, make sure you are running:
-
-- **Matugen** 4.1.0 or newer
-- **quickshell-git** 0.3.0 or newer
-
-You can check the installed versions with:
-
+### Dynamic Colors / Matugen Not Working
+Verify installed versions:
 ```bash
 matugen --version
 quickshell --version
 ```
-
-#### Arch Linux / CachyOS
-
-Make sure you are using the AUR `quickshell-git` package, rather than another Quickshell build provided by a third-party repository.
-
-A reported case on CachyOS was caused by the system using the Noctalia Quickshell package from the CachyOS repositories instead of `aur/quickshell-git`. Replacing it with the AUR package fixed Matugen and dynamic colors.
-
+On Arch Linux / CachyOS, make sure you are using `aur/quickshell-git`:
 ```bash
 yay -S aur/quickshell-git
 ```
 
-If another Quickshell package is installed, your package manager may ask to replace the conflicting package.
-
----
-
-### Quickshell stopped working after a Qt update
-
-Quickshell may stop starting correctly after a Qt update if the installed `quickshell-git` package was compiled against the previous Qt version.
-
-For example, this can happen after updates such as:
-
-```
-Qt 6.11.1 -> Qt 6.11.2
-```
-
-Rebuild `quickshell-git` against the newly installed Qt libraries:
-
+### Quickshell Stopped Working After a Qt Update
+Rebuild `quickshell-git` against the newly updated Qt libraries:
 ```bash
 yay -S --rebuild aur/quickshell-git
 ```
 
-Then restart Quickshell.
-
-If rebuilding does not solve the problem, completely reinstall `quickshell-git` using your AUR helper.
-
-> **💡 Tip**
->
-> If the shell suddenly stops working immediately after a Qt system update, rebuilding `quickshell-git` should be one of the first troubleshooting steps.
-
----
-
-### Tray icons disappear after an update or shell restart
-
-Apps such as Discord, Vesktop, Steam or other Electron apps may vanish from the system tray after the shell restarts (for example after an update) and only come back once you restart each app.
-
-This is handled by the `sni_watcher` helper, which keeps the tray alive across shell restarts:
-
-```
-~/.config/quickshell/ii/scripts/tray/sni_watcher
-```
-
-It ships as source only, so it has to be built once (needs a Rust toolchain):
-
+### Tray Icons Missing After Restart
+Ensure the `sni_watcher` helper binary is compiled:
 ```bash
 ~/.config/quickshell/ii/scripts/rust-helpers.sh build sni_watcher
 ```
 
-Hyprland starts it automatically at login. To start it right away without logging out:
-
-```bash
-~/.config/quickshell/ii/scripts/tray/sni_watcher & disown
-```
-
-You can check that it is running with `pgrep -x sni_watcher`. Apps whose icon is already gone need to be restarted once; after that, their icons survive shell restarts.
-
 </details>
 
-## Sidebars
+---
 
-<!-- PLACEHOLDER — bento grid 2 (Figma): AI chat, Translator, Phone, sidebar dashboard.
-     Export at 1840 px wide, dark and light:
-     .github/assets/readme/bento-sidebars-dark.png / .github/assets/readme/bento-sidebars-light.png -->
-<picture>
-  <img src=".github/assets/readme/sidebars.png" width="100%" alt="Sidebars: AI chat, Translator, Phone and the dashboard" />
-</picture>
+## Credits & Attribution
 
-The left sidebar holds an **AI chat** for cloud and local models, a **Translator** with alternatives and audio, and your **phone**: notifications, files, clipboard and a live screen mirror you can touch. The right sidebar is the **dashboard**, with quick toggles, audio, network and notifications.
+<!-- Special credit to P3DROVFX for the o.g. project (https://github.com/P3DROVFX/ii-p3drovfx) and its architecture -->
 
-## Everyday tools
+Special credit and gratitude to **[P3DROVFX](https://github.com/P3DROVFX/ii-p3drovfx)** for the o.g. project and its foundational architecture.
 
-<table>
-  <tr>
-    <td width="50%"><img src=".github/assets/readme/island.gif" width="100%" alt="Hovering the Dynamic Island reveals its dashboard" /></td>
-    <td width="50%"><img src=".github/assets/readme/search.gif" width="100%" alt="Search evaluating math and conversions" /></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Dynamic Island</b><br><sub>Media, activities and OSDs live in the notch. Hover it to open the dashboard. Press <b>Esc</b> while expanded to collapse directly to the resting time-only face.</sub></td>
-    <td align="center"><b>Search</b><br><sub>Apps, math, unit and currency conversion, commands and AI, with no prefixes.</sub></td>
-  </tr>
-  <tr>
-    <td width="50%"><img src=".github/assets/readme/settings.gif" width="100%" alt="Navigating the redesigned Settings pages" /></td>
-    <td width="50%"><img src=".github/assets/readme/livedraw.gif" width="100%" alt="Drawing on top of the screen with Live Draw" /></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Settings</b><br><sub>Every page previews the real component as you change it. Configure autohide sensitivity, window overlay vs push mode, and keyboard shortcuts.</sub></td>
-    <td align="center"><b>Live Draw</b><br><sub>Annotate anything on screen, spotlight and zoom, then save or copy it.</sub></td>
-  </tr>
-</table>
-
-## Enhanced Dynamic Island & Autohide Architecture
-
-This fork features a rebuilt top-shell autohide engine and enhanced keyboard interactions:
-
-- **Escape (`Esc`) to Collapse**: Pressing `Escape` while the island or dashboard is expanded collapses it immediately to the contracted resting time-only clock face, suppressing re-expansion until the pointer leaves.
-- **Top Shell Autohide Coordination**: A centralized hover bus debounces reveals and retractions, eliminating top-edge jitter and window shaking.
-- **Window Overlay Mode**: Toggle `pushWindows` in Settings (`Bar → Behavior`) to let the bar and island overlay smoothly above windows without resizing or pushing desktop tiles.
-- **Accurate Top Edge Sensor**: Handover logic ensures that hidden masks never interfere with browser tabs or top window controls.
-- **Notification App Icon Sanitization**: Fixes raw file paths sprawling across notification popups.
-
-For full technical specifications and implementation details, see [**CHANGES.md**](CHANGES.md).
-
-## Credits
-
-- **[end-4](https://github.com/end-4):** Creator of illogical-impulse.
+- **[P3DROVFX](https://github.com/P3DROVFX/ii-p3drovfx):** Creator of the original ii-p3drovfx shell.
+- **[end-4](https://github.com/end-4):** Creator of illogical-impulse dotfiles.
 - **[vaguesyntax](https://github.com/vaguesyntax):** Creator of ii-vynx.
-- **[pc-trade](https://github.com/pctrade):** Some design and features inspo.
+- **[pc-trade](https://github.com/pctrade):** Design and feature inspirations.
 - **[so-do-i-look-like-him](https://github.com/so-do-i-look-like-him):** Installation bug fixes.
-- **[asteriau](https://github.com/asteriau):** Cheatsheet keybinds animations.
+- **[asteriau](https://github.com/asteriau):** Cheatsheet keybind animations.
 - **[hnpf](https://github.com/hnpf):** Nothing widgets design.
 - **[gowall](https://github.com/Achno/gowall):** Dynamic icons theme system.
 - **[hyprmon](https://github.com/erans/hyprmon):** Monitor management in settings.
-- **[Quickshell](https://quickshell.org/):** Widget system.
-- **[Hyprland](https://hypr.land/):** Compositor.
+- **[Quickshell](https://quickshell.org/):** Reactive desktop shell toolkit.
+- **[Hyprland](https://hypr.land/):** Wayland compositor.
 
 <br>
 
 <div align="center">
-  <b>If you like this project, consider giving it a star! ⭐</b>
+  <b>⭐ If you find ii-DYNAMiC$ useful, consider starring the repository!</b>
 </div>
