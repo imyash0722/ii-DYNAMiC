@@ -229,7 +229,9 @@ Scope {
             root.consumeDashboardPage();
         }
         function onToggleIslandDashboardRequested() {
-            if (root.dashboardActive)
+            if (root.searchActive || GlobalStates.overviewOpen)
+                root.collapseToClock();
+            else if (root.dashboardActive)
                 root.dismissDashboard();
             else
                 root.openDashboard();
@@ -273,7 +275,9 @@ Scope {
                 root.dismissDashboard();
             }
             function toggleDashboard(): void {
-                if (root.dashboardActive)
+                if (root.searchActive || GlobalStates.overviewOpen)
+                    root.collapseToClock();
+                else if (root.dashboardActive)
                     root.dismissDashboard();
                 else
                     root.openDashboard();
@@ -2188,7 +2192,9 @@ Scope {
 
             Keys.onReleased: event => {
                 if (event.key === Qt.Key_Super_L || event.key === Qt.Key_Super_R || event.key === Qt.Key_Meta) {
-                    if (root.dashboardActive)
+                    if (root.searchActive || GlobalStates.overviewOpen)
+                        root.collapseToClock();
+                    else if (root.dashboardActive)
                         root.dismissDashboard();
                     else
                         GlobalStates.toggleOverview();
@@ -2458,7 +2464,9 @@ Scope {
 
             Keys.onReleased: event => {
                 if (event.key === Qt.Key_Super_L || event.key === Qt.Key_Super_R || event.key === Qt.Key_Meta) {
-                    if (root.dashboardActive)
+                    if (root.searchActive || GlobalStates.overviewOpen)
+                        root.collapseToClock();
+                    else if (root.dashboardActive)
                         root.dismissDashboard();
                     else
                         GlobalStates.toggleOverview();

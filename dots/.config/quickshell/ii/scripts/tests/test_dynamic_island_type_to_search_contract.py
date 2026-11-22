@@ -34,7 +34,10 @@ class DynamicIslandTypeToSearchContractTests(unittest.TestCase):
 
     def test_fullwindow_and_container_capture_keys(self):
         self.assertIn("Keys.onPressed: event => {\n                root.handleDashboardTypeToSearch(event);", NOTCH_ISLAND)
-        self.assertIn("if (root.dashboardActive)\n                        root.dismissDashboard();\n                    else\n                        GlobalStates.toggleOverview();", NOTCH_ISLAND)
+        self.assertIn("if (root.searchActive || GlobalStates.overviewOpen)\n                        root.collapseToClock();\n                    else if (root.dashboardActive)\n                        root.dismissDashboard();\n                    else\n                        GlobalStates.toggleOverview();", NOTCH_ISLAND)
+
+    def test_toggle_signal_closes_search_or_dashboard(self):
+        self.assertIn("function onToggleIslandDashboardRequested() {\n            if (root.searchActive || GlobalStates.overviewOpen)\n                root.collapseToClock();\n            else if (root.dashboardActive)\n                root.dismissDashboard();\n            else\n                root.openDashboard();", NOTCH_ISLAND)
 
     def test_dashboard_focus_arming(self):
         self.assertIn("if (fullWindow)\n                fullWindow.forceActiveFocus();", NOTCH_ISLAND)
