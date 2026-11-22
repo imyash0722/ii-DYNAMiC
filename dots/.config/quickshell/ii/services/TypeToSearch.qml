@@ -120,6 +120,7 @@ Singleton {
         || GlobalStates.oskOpen || GlobalStates.overlayOpen || GlobalStates.settingsOpen
         || GlobalStates.dashboardPanelOpen || GlobalStates.policiesPanelOpen
         || GlobalStates.scratchpadOpen
+        || GlobalStates.islandDashboardOpen
         // Edit Mode owns the keyboard even before its catalogue search field is focused.
         // Its own search bars must receive printable keys instead of the Overview's
         // compositor-level type-to-search binds consuming them.

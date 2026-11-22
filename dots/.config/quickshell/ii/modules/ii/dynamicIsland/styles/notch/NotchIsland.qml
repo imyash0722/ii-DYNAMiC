@@ -247,6 +247,10 @@ Scope {
         root.preferClockFace = false;
         root.expandSuppressed = false;
         root.dashboardRequested = true;
+        Qt.callLater(() => {
+            if (fullWindow)
+                fullWindow.forceActiveFocus();
+        });
     }
 
     readonly property bool isPrimaryIsland: !root.screenOverride || root.screenOverride.name === (Quickshell.screens.length > 0 ? Quickshell.screens[0].name : "")
@@ -448,6 +452,31 @@ Scope {
         // A dashboard that was asked for from outside has no hover to drop, so the
         // request is the thing to end; see `dashboardRequested`.
         root.dashboardRequested = false;
+    }
+
+    /**
+     * Type-to-search from the main widgets dashboard menu.
+     * When the user starts typing any printable character while the main dashboard is up,
+     * the island immediately transitions to Search, seeds the query, and focuses the field.
+     */
+    function handleDashboardTypeToSearch(event) {
+        if (!root.dashboardActive || root.searchActive)
+            return false;
+        if (notchContent.dashboardGridEditing || notchContent.dashboardWantsKeyboard || notchContent.pendingPage.pageId !== "")
+            return false;
+        if (event.modifiers & Qt.ControlModifier || event.modifiers & Qt.AltModifier || event.modifiers & Qt.MetaModifier)
+            return false;
+        if (event.key === Qt.Key_Escape || event.key === Qt.Key_Tab || event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Backspace || event.key === Qt.Key_Delete)
+            return false;
+        const text = String(event.text ?? "");
+        if (text.length > 0 && text.trim().length > 0) {
+            root.dismissDashboard();
+            GlobalStates.activeSearchQuery = text;
+            GlobalStates.openSearch();
+            event.accepted = true;
+            return true;
+        }
+        return false;
     }
 
     // A turn later: `interruptsActive` follows `pagedId` (through the explicit
@@ -1955,7 +1984,15 @@ Scope {
     }
     onWallpaperActiveChanged: if (root.wallpaperActive) root.expandedBubbleId = ""
     onSessionActiveChanged: if (root.sessionActive) root.expandedBubbleId = ""
-    onDashboardActiveChanged: if (root.dashboardActive) root.expandedBubbleId = ""
+    onDashboardActiveChanged: {
+        if (root.dashboardActive) {
+            root.expandedBubbleId = "";
+            Qt.callLater(() => {
+                if (fullWindow)
+                    fullWindow.forceActiveFocus();
+            });
+        }
+    }
     // The comment above always promised this one and the handler never existed: the
     // bubble's own fold path cannot serve it, because an open card collapsing when
     // the island hides runs through `shown`, which the hidden island has already
@@ -2145,9 +2182,16 @@ Scope {
             anchors.fill: parent
             focus: true
 
+            Keys.onPressed: event => {
+                root.handleDashboardTypeToSearch(event);
+            }
+
             Keys.onReleased: event => {
                 if (event.key === Qt.Key_Super_L || event.key === Qt.Key_Super_R || event.key === Qt.Key_Meta) {
-                    GlobalStates.toggleOverview();
+                    if (root.dashboardActive)
+                        root.dismissDashboard();
+                    else
+                        GlobalStates.toggleOverview();
                     event.accepted = true;
                 }
             }
@@ -2408,9 +2452,16 @@ Scope {
         Item {
             id: container
 
+            Keys.onPressed: event => {
+                root.handleDashboardTypeToSearch(event);
+            }
+
             Keys.onReleased: event => {
                 if (event.key === Qt.Key_Super_L || event.key === Qt.Key_Super_R || event.key === Qt.Key_Meta) {
-                    GlobalStates.toggleOverview();
+                    if (root.dashboardActive)
+                        root.dismissDashboard();
+                    else
+                        GlobalStates.toggleOverview();
                     event.accepted = true;
                 }
             }
