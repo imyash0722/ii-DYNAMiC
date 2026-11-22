@@ -12,6 +12,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import qs
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.common.functions
@@ -41,7 +42,7 @@ Rectangle {
     readonly property real expandedHeight: Math.min(440, Math.max(282, (panelLoader.item?.contentHeight ?? 0) + 20))
     readonly property real collapsedHeight: collapsedRow.implicitHeight + 16
     readonly property bool collapsed: Persistent.states.sidebar.policies.phone.peripherals.collapsed
-    readonly property int selectedTab: Math.max(0, Math.min(2, Persistent.states.sidebar.policies.phone.peripherals.tab))
+    readonly property int selectedTab: Math.max(0, Math.min(root.tabs.length - 1, Persistent.states.sidebar.policies.phone.peripherals.tab))
     implicitHeight: visible ? (collapsed ? collapsedHeight : expandedHeight) : 0
 
     Behavior on implicitHeight {
@@ -59,6 +60,7 @@ Rectangle {
     // ─── Feature state (shared by the rail, the pills and the panels) ───
     readonly property bool _scrcpyPresent: KdeConnectService.scrcpyAvailable
     readonly property bool _droidcamPresent: PhoneCameraService.available
+    readonly property bool _webcamIi: PhoneCameraService.backend === "ii"
     readonly property bool _micPresent: PhoneMicService.available
     readonly property bool _deviceOnline: KdeConnectService.activeReachable
 
@@ -72,21 +74,49 @@ Rectangle {
         : !root._deviceOnline || root.mirrorError.length > 0 ? "offline"
         : (root.mirrorEmbedded || root.mirrorRunning) ? "active"
         : root.mirrorLaunching ? "connecting" : "ready"
+    readonly property bool _webcamNoCap: root._webcamIi && IiCameraService.connected && !IiCameraService.hasCameraCap
     readonly property string webcamState: !root._droidcamPresent ? "unavailable"
-        : !root._deviceOnline ? "offline"
+        : (!root._deviceOnline || root._webcamNoCap) ? "offline"
         : PhoneCameraService.connecting ? "connecting"
         : PhoneCameraService.running ? "active" : "ready"
     readonly property string micState: !root._micPresent ? "unavailable"
         : !root._deviceOnline ? "offline"
         : PhoneMicService.connecting ? "connecting"
         : PhoneMicService.running ? "active" : "ready"
-    readonly property var featureStates: [root.mirrorState, root.webcamState, root.micState]
+    // Stats only with an ii tools that reports the phone's load: an older app (or none)
+    // announces nothing, and the tab is not there at all.
+    readonly property bool statsAvailable: IiLinkService.phonePerfAvailable
+    readonly property string statsState: IiLinkService.phonePerfDev !== "" ? "ready" : "offline"
+    readonly property var featureStates: [root.mirrorState, root.webcamState, root.micState, root.statsState]
 
     readonly property var tabs: [
         { "name": Translation.tr("Mirror"), "icon": "smart_display" },
         { "name": Translation.tr("Webcam"), "icon": "videocam" },
         { "name": Translation.tr("Mic"), "icon": "mic" }
-    ]
+    ].concat(root.statsAvailable ? [{ "name": Translation.tr("Stats"), "icon": "monitoring" }] : [])
+
+    /// The Phone tab is on screen with no sub-page over it (set by Phone.qml).
+    property bool pageShown: true
+    // The phone samples its load only while the Stats panel can be seen.
+    readonly property bool statsWatching: root.statsAvailable && root.visible && !root.collapsed && root.pageShown
+        && GlobalStates.policiesPanelOpen && panelArea.shownTab === 3
+    property bool _statsWatched: false
+    onStatsWatchingChanged: {
+        if (root.statsWatching === root._statsWatched)
+            return;
+        root._statsWatched = root.statsWatching;
+        IiLinkService.watchPhonePerf(root.statsWatching);
+    }
+    Component.onCompleted: {
+        if (root.statsWatching) {
+            root._statsWatched = true;
+            IiLinkService.watchPhonePerf(true);
+        }
+    }
+    Component.onDestruction: {
+        if (root._statsWatched)
+            IiLinkService.watchPhonePerf(false);
+    }
 
     // ─── Install guide popup state ─────────────────────────
     property bool _installGuideVisible: false
@@ -296,7 +326,7 @@ Rectangle {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 height: parent.height
-                sourceComponent: [mirrorPanel, webcamPanel, micPanel][panelArea.shownTab]
+                sourceComponent: [mirrorPanel, webcamPanel, micPanel, statsPanel][Math.min(panelArea.shownTab, root.tabs.length - 1)]
             }
 
             Connections {
@@ -419,52 +449,106 @@ Rectangle {
             symbol: "videocam"
             shapeKind: MaterialShape.Shape.Cookie7Sided
             featureState: root.webcamState
-            title: root._droidcamPresent ? Translation.tr("Phone Webcam") : Translation.tr("Install DroidCam")
+            title: (root._webcamIi || root._droidcamPresent) ? Translation.tr("Phone Webcam") : Translation.tr("Install DroidCam")
             subtitle: {
                 if (!root._droidcamPresent)
-                    return Translation.tr("See the missing dependencies");
+                    return root._webcamIi
+                        ? Translation.tr("Install required packages on this PC")
+                        : Translation.tr("See the missing dependencies");
                 if (!root._deviceOnline)
-                    return Translation.tr("Pair a reachable device");
+                    return root._webcamIi
+                        ? (!IiLinkService.hasPeers
+                            ? Translation.tr("Pair a phone in Settings → ii tools")
+                            : Translation.tr("Phone offline — open ii tools on your phone"))
+                        : Translation.tr("Pair a reachable device");
+                if (root._webcamNoCap)
+                    return Translation.tr("Update ii tools on your phone to use its camera");
+                if (root._webcamIi && IiCameraService.state === "asking")
+                    return Translation.tr("Confirm on your phone");
                 if (PhoneCameraService.connecting)
-                    return Translation.tr("Connecting to %1…").arg(PhoneCameraService.activeIp || "?");
+                    return root._webcamIi
+                        ? Translation.tr("Starting…")
+                        : Translation.tr("Connecting to %1…").arg(PhoneCameraService.activeIp || "?");
                 if (PhoneCameraService.running)
                     return Translation.tr("Active for %1").arg(root._fmtElapsed(PhoneCameraService.elapsedMs))
                         + " · " + (PhoneCameraService.videoDevice || "/dev/videoN");
-                return Translation.tr("DroidCam over %1").arg(Config.options.phone.webcam.connection === "usb" ? "USB" : "Wi-Fi");
+                return root._webcamIi
+                    ? Translation.tr("ii tools")
+                    : Translation.tr("DroidCam over %1").arg(Config.options.phone.webcam.connection === "usb" ? "USB" : "Wi-Fi");
             }
             mainLabel: !root._droidcamPresent ? Translation.tr("How to install")
-                : root.webcamState === "active" ? Translation.tr("Stop") : Translation.tr("Start")
+                : root.webcamState === "active" ? Translation.tr("Stop")
+                : (root._webcamIi && root.webcamState === "connecting") ? Translation.tr("Cancel")
+                : Translation.tr("Start")
             mainSymbol: !root._droidcamPresent ? "download"
-                : root.webcamState === "active" ? "stop" : "play_arrow"
-            mainEnabled: !root._droidcamPresent || root._deviceOnline
+                : (root.webcamState === "active" || (root._webcamIi && root.webcamState === "connecting")) ? "stop" : "play_arrow"
+            mainEnabled: !root._droidcamPresent || (root._deviceOnline && !root._webcamNoCap)
             settingsPage: "PhoneWebcamPage.qml"
-            error: root._droidcamPresent && !PhoneCameraService.running ? PhoneCameraService.lastError.split("\n")[0] : ""
-            detail: PhoneCameraService.running
-                ? (PhoneCameraService.activeIp || "USB") + ":" + String(PhoneCameraService.activePort)
+            error: !PhoneCameraService.running && (root._droidcamPresent || root._webcamIi)
+                ? PhoneCameraService.lastError.split("\n")[0] : ""
+            detail: {
+                if (!PhoneCameraService.running) return "";
+                if (root._webcamIi) {
+                    const st = IiCameraService.phoneStatus || ({});
+                    const lens = String(st.lens || "front");
+                    const q = String(st.quality || "720p");
+                    return (PhoneCameraService.videoDevice || "/dev/videoN") + " · " + lens + " · " + q;
+                }
+                return (PhoneCameraService.activeIp || "USB") + ":" + String(PhoneCameraService.activePort)
                     + " · " + (PhoneCameraService.videoDevice || "/dev/videoN")
-                    + " · " + (Config.options.phone.webcam.cameraFacing === "back" ? Translation.tr("back camera") : Translation.tr("front camera"))
-                : ""
+                    + " · " + (Config.options.phone.webcam.cameraFacing === "back" ? Translation.tr("back camera") : Translation.tr("front camera"));
+            }
             onMainClicked: root.webcamMain()
             onStopClicked: PhoneCameraService.stopCamera()
-            toggles: [
-                { icon: "cameraswitch", label: Config.options.phone.webcam.cameraFacing === "back" ? Translation.tr("Back camera") : Translation.tr("Front camera"),
-                  checked: Config.options.phone.webcam.cameraFacing === "back",
-                  // Applies on the next start, like the webcam page's picker.
-                  toggle: () => PhoneCameraService.flipCamera() },
-                { icon: "flip", label: Translation.tr("Mirror"), checked: Config.options.phone.webcam.mirrorHorizontally,
-                  toggle: () => PhoneCameraService.toggleMirror() },
-                { icon: "usb", label: Translation.tr("USB"), checked: Config.options.phone.webcam.connection === "usb",
-                  toggle: () => Config.options.phone.webcam.connection = Config.options.phone.webcam.connection === "usb" ? "wifi" : "usb" },
-                { icon: "hd", label: Config.options.phone.webcam.resolution === "1920x1080" ? "1080p" : Config.options.phone.webcam.resolution === "640x480" ? "480p" : "720p",
-                  checked: Config.options.phone.webcam.resolution !== "640x480",
-                  toggle: () => {
-                      const r = Config.options.phone.webcam.resolution;
-                      Config.options.phone.webcam.resolution = r === "640x480" ? "1280x720" : r === "1280x720" ? "1920x1080" : "640x480";
-                  } }
-            ]
+            toggles: {
+                if (!root._webcamIi) {
+                    return [
+                        { icon: "cameraswitch", label: Config.options.phone.webcam.cameraFacing === "back" ? Translation.tr("Back camera") : Translation.tr("Front camera"),
+                          checked: Config.options.phone.webcam.cameraFacing === "back",
+                          // Applies on the next start, like the webcam page's picker.
+                          toggle: () => PhoneCameraService.flipCamera() },
+                        { icon: "flip", label: Translation.tr("Mirror"), checked: PhoneCameraService.mirrored,
+                          toggle: () => PhoneCameraService.toggleMirror() },
+                        { icon: "usb", label: Translation.tr("USB"), checked: Config.options.phone.webcam.connection === "usb",
+                          toggle: () => Config.options.phone.webcam.connection = Config.options.phone.webcam.connection === "usb" ? "wifi" : "usb" },
+                        { icon: "hd", label: Config.options.phone.webcam.resolution === "1920x1080" ? "1080p" : Config.options.phone.webcam.resolution === "640x480" ? "480p" : "720p",
+                          checked: Config.options.phone.webcam.resolution !== "640x480",
+                          toggle: () => {
+                              const r = Config.options.phone.webcam.resolution;
+                              Config.options.phone.webcam.resolution = r === "640x480" ? "1280x720" : r === "1280x720" ? "1920x1080" : "640x480";
+                          } }
+                    ];
+                }
+                const st = IiCameraService.phoneStatus || ({});
+                const lens = String(st.lens || "front");
+                const quality = String(st.quality || "720p");
+                const list = [
+                    { icon: "cameraswitch", label: lens === "front" ? Translation.tr("Front camera") : Translation.tr("Back camera"),
+                      checked: lens !== "front",
+                      toggle: () => PhoneCameraService.flipCamera() },
+                    { icon: "flip", label: Translation.tr("Mirror"),
+                      checked: PhoneCameraService.mirrored,
+                      toggle: () => PhoneCameraService.toggleMirror() },
+                    { icon: "hd", label: quality === "1080p" ? "1080p" : "720p",
+                      checked: quality === "1080p",
+                      toggle: () => IiCameraService.set({ quality: quality === "1080p" ? "720p" : "1080p" }) },
+                    { icon: "video_stable", label: Translation.tr("Stabilize"),
+                      checked: Boolean(st.stabilize),
+                      toggle: () => IiCameraService.set({ stabilize: !Boolean(st.stabilize) }) }
+                ];
+                if (Boolean(st.hasTorch)) {
+                    list.push({ icon: "flashlight_on", label: Translation.tr("Torch"),
+                        checked: Boolean(st.torch),
+                        toggle: () => IiCameraService.set({ torch: !Boolean(st.torch) }) });
+                }
+                return list;
+            }
             actions: PhoneCameraService.running ? [
                 { icon: "preview", label: Translation.tr("Preview"), run: () => PhoneCameraService.openExternalPreview() }
-            ] : []
+            ] : (root._webcamIi && PhoneCameraService.missingDeps.length > 0 && PhoneCameraService.lastError.length > 0 ? [
+                { icon: "download", label: Translation.tr("How to install"),
+                  run: () => root._openInstallGuide(PhoneCameraService.missingDeps, Translation.tr("Phone Webcam — Missing Dependencies")) }
+            ] : [])
         }
     }
 
@@ -480,6 +564,8 @@ Rectangle {
                     return Translation.tr("See the missing dependencies");
                 if (!root._deviceOnline)
                     return Translation.tr("Pair a reachable device");
+                if (PhoneMicService.waitingForPhoneTap)
+                    return Translation.tr("Tap the notification on the phone");
                 if (PhoneMicService.connecting)
                     return Translation.tr("Setting up audio routing…");
                 if (PhoneMicService.running)
@@ -535,6 +621,11 @@ Rectangle {
                   } }
             ] : []
         }
+    }
+
+    Component {
+        id: statsPanel
+        PhoneStatsPanel {}
     }
 
     // ─── Components ─────────────────────────────────────────
@@ -742,7 +833,7 @@ Rectangle {
                         font.pixelSize: Appearance.font.pixelSize.smaller
                         color: Appearance.colors.colOnLayer3
                         wrapMode: Text.Wrap
-                        maximumLineCount: 2
+                        maximumLineCount: 4
                         elide: Text.ElideRight
                     }
                 }
@@ -773,7 +864,7 @@ Rectangle {
                         font.pixelSize: Appearance.font.pixelSize.smaller
                         color: Appearance.colors.colOnErrorContainer
                         wrapMode: Text.Wrap
-                        maximumLineCount: 2
+                        maximumLineCount: 4
                         elide: Text.ElideRight
                     }
                 }

@@ -70,7 +70,7 @@ GridLayout {
                 spacing: 0
                 StyledText {
                     Layout.fillWidth: true
-                    text: card.modelData.name ?? UtilityFiles.baseName(card.path)
+                    text: card.modelData.name ?? FileShelf.name(card.path)
                     color: ClockStyle.colOnSurface
                     font.pixelSize: ClockStyle.textSmall
                     font.weight: Font.DemiBold
@@ -78,8 +78,9 @@ GridLayout {
                 }
                 StyledText {
                     Layout.fillWidth: true
-                    visible: grid.showAge && (card.modelData.modified ?? 0) > 0
-                    text: UtilityFiles.age(card.modelData.modified ?? 0, grid.now.getTime(), s => Translation.tr(s))
+                    readonly property string fromPc: FileShelf.isPc(card.path) ? FileShelf.pcName(card.path) : ""
+                    visible: fromPc !== "" || (grid.showAge && (card.modelData.modified ?? 0) > 0)
+                    text: fromPc !== "" ? Translation.tr("On %1").arg(fromPc) : UtilityFiles.age(card.modelData.modified ?? 0, grid.now.getTime(), s => Translation.tr(s))
                     color: ClockStyle.colOnSurfaceVariant
                     font.pixelSize: Appearance.font.pixelSize.smallest
                     elide: Text.ElideRight
@@ -89,8 +90,8 @@ GridLayout {
             FileDragArea {
                 anchors.fill: parent
                 paths: [card.path]
-                dragIcon: UtilityFiles.isImage(card.path) ? "image-x-generic" : "text-x-generic"
-                onClicked: Quickshell.execDetached(["xdg-open", card.path])
+                dragIcon: FileShelf.isImage(card.path) ? "image-x-generic" : "text-x-generic"
+                onClicked: FileShelf.open(card.path)
                 onDragFinished: grid.dragged(card.path)
             }
 

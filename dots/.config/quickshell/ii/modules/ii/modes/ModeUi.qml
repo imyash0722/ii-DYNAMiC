@@ -152,6 +152,7 @@ Singleton {
         hyprland: [MaterialShape.Shape.Gem, MaterialShape.Shape.Pentagon],
         advanced: [MaterialShape.Shape.PixelTriangle, MaterialShape.Shape.Triangle],
         tools: [MaterialShape.Shape.Burst, MaterialShape.Shape.Boom],
+        focus: [MaterialShape.Shape.Flower, MaterialShape.Shape.Clover4Leaf],
         flow: [MaterialShape.Shape.Arrow, MaterialShape.Shape.Triangle]
     })
 
@@ -302,9 +303,24 @@ Singleton {
         case "phone": {
             if (t.reachable === false)
                 return Translation.tr("Phone out of reach");
-            return t.batteryBelow !== null && t.batteryBelow !== undefined
-                ? Translation.tr("Phone nearby, battery below %1 %").arg(t.batteryBelow)
-                : Translation.tr("Phone nearby");
+            const parts = [];
+            if (t.batteryBelow !== null && t.batteryBelow !== undefined)
+                parts.push(Translation.tr("battery below %1 %").arg(t.batteryBelow));
+            if (t.batteryAbove !== null && t.batteryAbove !== undefined)
+                parts.push(Translation.tr("battery above %1 %").arg(t.batteryAbove));
+            if (t.charging === "yes") parts.push(Translation.tr("charging"));
+            if (t.charging === "no") parts.push(Translation.tr("unplugged"));
+            if (t.dnd === "on") parts.push(Translation.tr("Do Not Disturb on"));
+            if (t.dnd === "off") parts.push(Translation.tr("Do Not Disturb off"));
+            if (t.call === "yes") parts.push(Translation.tr("in a call"));
+            if (t.call === "no") parts.push(Translation.tr("not in a call"));
+            if (t.ringer === "normal") parts.push(Translation.tr("ringer on"));
+            if (t.ringer === "vibrate") parts.push(Translation.tr("on vibrate"));
+            if (t.ringer === "silent") parts.push(Translation.tr("silenced"));
+            if (t.net === "wifi") parts.push(Translation.tr("on Wi-Fi"));
+            if (t.net === "cellular") parts.push(Translation.tr("on mobile data"));
+            if (t.net === "none") parts.push(Translation.tr("offline"));
+            return parts.length > 0 ? Translation.tr("Phone nearby, %1").arg(parts.join(", ")) : Translation.tr("Phone nearby");
         }
         case "pomodoro":
             return t.phase === "focus" ? Translation.tr("Pomodoro focus lap")
@@ -713,10 +729,37 @@ Singleton {
             return { action: "go", target: "1", back: false };
         case "phone":
             return { kind: "ping", message: "" };
+        case "phoneControl":
+            return root.phoneControlDefault("dnd");
+        case "blockApps":
+            return { apps: ModeSchema.DEFAULT_BLOCKED_APPS.slice(), allowOnly: false, allow: [], strict: false };
+        case "blockSites":
+            return { sites: ModeSchema.DEFAULT_BLOCKED_SITES.slice(), allow: [], strict: false };
+        case "mediaGuard":
+            return { allowPlayers: ModeSchema.DEFAULT_ALLOWED_PLAYERS.slice(), allowTitles: [] };
+        case "ambientSound":
+            return ModeSchema.ambientSoundValue(ModeSchema.DEFAULT_AMBIENT_SOUND, "browser");
+        case "browserExtension":
+            return ModeSchema.focusExtensionValue("leechblock");
         case "none":
             return null;
         }
         return type === "closeApps" ? [] : "";
+    }
+
+    function phoneControlDefault(kind) {
+        switch (kind) {
+        case "dnd": case "torch": return { kind: kind, on: true };
+        case "rotate": return { kind: kind, auto: true };
+        case "ringer": return { kind: kind, mode: "vibrate" };
+        case "volume": return { kind: kind, stream: "media", level: 30 };
+        case "brightness": return { kind: kind, level: 50 };
+        case "media": return { kind: kind, cmd: "pause" };
+        case "notify": return { kind: kind, title: "", text: "" };
+        case "speak": return { kind: kind, text: "" };
+        case "vibrate": return { kind: kind, ms: 400 };
+        }
+        return { kind: kind };
     }
 
     // The label of one of an action's choices (segmented / dropdown editors).
@@ -906,6 +949,23 @@ Singleton {
             const title = String(obj?.title ?? v ?? "");
             return obj?.body ? `${title} · ${obj.body}` : title;
         }
+        case "blockApps": {
+            if (obj?.allowOnly)
+                return Translation.tr("Every app except %1").arg(root.listText(obj?.allow) || Translation.tr("none"));
+            return root.listText((obj?.apps ?? []).map(k => AppStats.displayName(k) || k), 3);
+        }
+        case "blockSites":
+            return root.listText(obj?.sites, 3);
+        case "mediaGuard": {
+            const players = ModeSchema.stringList(obj?.allowPlayers);
+            return players.length ? Translation.tr("Allows %1").arg(root.listText(players, 2)) : Translation.tr("Only the ambient sound");
+        }
+        case "ambientSound": {
+            const name = String(obj?.label || obj?.title || obj?.url || "");
+            return obj?.player === "audio" ? Translation.tr("%1 · audio only").arg(name) : name;
+        }
+        case "browserExtension":
+            return String(obj?.name ?? "");
         case "mode": {
             const name = Modes.modeById(obj?.id)?.name ?? obj?.id ?? "";
             return (obj?.action === "stop" ? Translation.tr("Stop %1") : Translation.tr("Start %1")).arg(name);
@@ -938,6 +998,23 @@ Singleton {
             if (obj?.action === "move")
                 return Translation.tr("Move the window to %1").arg(label);
             return obj?.back ? Translation.tr("Go to %1, back at the end").arg(label) : Translation.tr("Go to %1").arg(label);
+        }
+        case "phoneControl": {
+            const on = obj?.on !== false;
+            switch (obj?.kind) {
+            case "dnd": return on ? Translation.tr("Phone: Do Not Disturb on") : Translation.tr("Phone: Do Not Disturb off");
+            case "torch": return on ? Translation.tr("Phone: flashlight on") : Translation.tr("Phone: flashlight off");
+            case "rotate": return obj?.auto === false ? Translation.tr("Phone: lock to portrait") : Translation.tr("Phone: auto-rotate");
+            case "ringer": return Translation.tr("Phone ringer: %1").arg(obj?.mode === "silent" ? Translation.tr("silent") : (obj?.mode === "normal" ? Translation.tr("sound") : Translation.tr("vibrate")));
+            case "volume": return Translation.tr("Phone %1 volume to %2 %").arg(String(obj?.stream ?? "media")).arg(obj?.level ?? 0);
+            case "brightness": return obj?.auto === true ? Translation.tr("Phone: adaptive brightness") : Translation.tr("Phone brightness to %1 %").arg(obj?.level ?? 0);
+            case "media": return Translation.tr("Phone media: %1").arg(String(obj?.cmd ?? "pause"));
+            case "notify": return Translation.tr("Phone notification: %1").arg(String(obj?.title || obj?.text || ""));
+            case "speak": return Translation.tr("Phone says: %1").arg(String(obj?.text ?? ""));
+            case "vibrate": return Translation.tr("Make the phone vibrate");
+            case "ring": return Translation.tr("Make the phone ring");
+            }
+            return Translation.tr("Phone control");
         }
         case "phone":
             return obj?.kind === "ring" ? Translation.tr("Ring it")

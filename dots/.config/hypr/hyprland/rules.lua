@@ -16,10 +16,10 @@ hl.window_rule({match = {class = "^()$", title = "^()$" },                   no_
 hl.window_rule({match = {title = "^(Open File)(.*)$" },                      center = true})
 -- The notes app is a real toplevel, not a layer surface: it belongs to a workspace
 -- and a click elsewhere must not dismiss it. Floated and centred so it opens as a
--- document window rather than taking over the tile layout.
+-- document window rather than taking over the tile layout. No size rule: the window
+-- sizes itself to the screen (NotesAppWindow), and a fixed one overflowed small screens.
 hl.window_rule({match = {title = "^(ii Notes)$" },                           float = true})
 hl.window_rule({match = {title = "^(ii Notes)$" },                           center = true})
-hl.window_rule({match = {title = "^(ii Notes)$" },                           size = "1500 940"})
 -- The clock app, like the notes app: a real toplevel that floats, centred. Usage, Modes
 -- and EasyEffects are built from the clock's parts and open at its size, so the
 -- whole-app windows read as one family.
@@ -38,6 +38,14 @@ hl.window_rule({match = {title = "^(ii System Health)$" },                   cen
 -- into the current layout.
 hl.window_rule({match = {title = "^(ii-phone-unlock)$" },                    float = true})
 hl.window_rule({match = {title = "^(ii-phone-unlock)$" },                    center = true})
+-- The phone's own windows (the mirror and app windows) open floating and centred, wherever
+-- they were asked for from: the controls overlay sizes them to the phone afterwards, but
+-- left to it the window first lands in the tiling layout, and from some entry points stays there.
+-- (Flex display, which is meant to tile, is put back by the controls overlay.)
+hl.window_rule({match = {title = "^(ii-phone-mirror-)(.*)$" },              float = true})
+hl.window_rule({match = {title = "^(ii-phone-mirror-)(.*)$" },              center = true})
+hl.window_rule({match = {title = "^(ii-phone-app-)(.*)$" },                 float = true})
+hl.window_rule({match = {title = "^(ii-phone-app-)(.*)$" },                 center = true})
 -- The scrcpy window the Phone sidebar embeds. It is a real window kept exactly
 -- under a cut-out in the panel's input region, which is what makes touches and
 -- the keyboard reach the phone natively; the panel paints the captured picture

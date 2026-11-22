@@ -247,6 +247,7 @@ Singleton {
             property JsonObject search: JsonObject {
                 property list<var> aliases: []
                 property list<string> recentEmojis: []
+                property list<string> recentSymbols: []
                 property list<string> recentQueries: []
                 property list<string> pinnedEntries: []
                 property list<var> panelUsage: []
@@ -537,6 +538,7 @@ Singleton {
                             property string cachedNotificationsJson: ""
                             property JsonObject scrcpy: JsonObject {
                                 property list<string> recentPackages: []
+                                property string hevcEncodersJson: "{}"
                             }
                             // Mirror / Webcam / Microphone group at the bottom of the tab
                             property JsonObject peripherals: JsonObject {

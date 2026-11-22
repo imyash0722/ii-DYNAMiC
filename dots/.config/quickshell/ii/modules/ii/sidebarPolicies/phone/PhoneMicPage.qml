@@ -119,7 +119,7 @@ ContentPage {
                 anchors.centerIn: parent
                 spacing: 5
 
-                MaterialSymbol {
+                AnimatedMaterialSymbol {
                     Layout.alignment: Qt.AlignVCenter
                     text: PhoneMicService.connecting ? "sync"
                         : (PhoneMicService.running
@@ -144,13 +144,15 @@ ContentPage {
 
                 StyledText {
                     Layout.alignment: Qt.AlignVCenter
-                    text: PhoneMicService.connecting
-                        ? Translation.tr("Connecting…")
-                        : (PhoneMicService.running
-                            ? (PhoneMicService.muted ? Translation.tr("Muted") : Translation.tr("Active"))
-                            : (PhoneMicService.available
-                                ? Translation.tr("Ready")
-                                : Translation.tr("Unavailable")))
+                    text: PhoneMicService.waitingForPhoneTap
+                        ? Translation.tr("Tap the notification on the phone")
+                        : (PhoneMicService.connecting
+                            ? Translation.tr("Connecting…")
+                            : (PhoneMicService.running
+                                ? (PhoneMicService.muted ? Translation.tr("Muted") : Translation.tr("Active"))
+                                : (PhoneMicService.available
+                                    ? Translation.tr("Ready")
+                                    : Translation.tr("Unavailable"))))
                     font.pixelSize: Appearance.font.pixelSize.smaller
                     font.weight: Font.DemiBold
                     color: PhoneMicService.running
@@ -176,7 +178,7 @@ ContentPage {
         text: !PhoneMicService.available
             ? Translation.tr("DroidCam or pactl is not installed. Install droidcam-cli and pactl, plus the DroidCam Android app, to use your phone as a microphone.")
             : !KdeConnectService.activeReachable
-                ? Translation.tr("No reachable KDE Connect device. Pair a device to use its microphone.")
+                ? Translation.tr("No reachable phone. Pair one to use its microphone.")
                 : Translation.tr("Microphone error: %1").arg(PhoneMicService.lastError)
 
         RippleButton {
@@ -254,11 +256,13 @@ ContentPage {
                 }
                 StyledText {
                     Layout.fillWidth: true
-                    text: PhoneMicService.connecting
-                        ? Translation.tr("Connecting…")
-                        : (PhoneMicService.running
-                            ? Translation.tr("Stop microphone")
-                            : Translation.tr("Start microphone"))
+                    text: PhoneMicService.waitingForPhoneTap
+                        ? Translation.tr("Tap the notification on the phone")
+                        : (PhoneMicService.connecting
+                            ? Translation.tr("Connecting…")
+                            : (PhoneMicService.running
+                                ? Translation.tr("Stop microphone")
+                                : Translation.tr("Start microphone")))
                     font.pixelSize: Appearance.font.pixelSize.normal
                     font.weight: Font.DemiBold
                     color: PhoneMicService.running
@@ -271,7 +275,8 @@ ContentPage {
                     visible: active
                     sourceComponent: Component {
                         StyledText {
-                            text: PhoneMicService.pulseSource.split(".").slice(-2).join(".")
+                            text: PhoneMicService.iiBackend ? Translation.tr("ii tools")
+                                : PhoneMicService.pulseSource.split(".").slice(-2).join(".")
                             font.pixelSize: Appearance.font.pixelSize.smaller
                             color: Appearance.colors.colOnErrorContainer
                             opacity: 0.7
@@ -301,7 +306,7 @@ ContentPage {
 
             contentItem: RowLayout {
                 spacing: 8
-                MaterialSymbol {
+                AnimatedMaterialSymbol {
                     Layout.alignment: Qt.AlignVCenter
                     text: PhoneMicService.muted ? "mic_off" : "mic"
                     iconSize: 22
@@ -370,6 +375,7 @@ ContentPage {
     ContentSection {
         icon: "graphic_eq"
         title: Translation.tr("Audio Effects")
+        visible: PhoneMicService.iiBackend
 
         ConfigSwitch {
             buttonIcon: "noise_aware"
@@ -443,6 +449,8 @@ ContentPage {
     ContentSection {
         icon: "cable"
         title: Translation.tr("Connection")
+        // Only scrcpy and DroidCam need an address; ii tools rides the link, over Wi-Fi or USB.
+        visible: !PhoneMicService.iiBackend
 
         ContentSubsection {
             title: Translation.tr("Connection type")
@@ -462,10 +470,10 @@ ContentPage {
             visible: Config.options.phone.microphone.connection === "wifi"
             text: Translation.tr("Phone IP")
             icon: "ip"
-            placeholderText: Translation.tr("Auto-detect from KDE Connect")
+            placeholderText: Translation.tr("Auto-detect from the paired phone")
             inputText: Config.options.phone.microphone.wifiIp
             textField.onEditingFinished: Config.options.phone.microphone.wifiIp = textField.text.trim()
-            tooltip: Translation.tr("Leave empty to auto-detect from KDE Connect")
+            tooltip: Translation.tr("Leave empty to auto-detect from the paired phone")
         }
 
         ConfigSpinBox {

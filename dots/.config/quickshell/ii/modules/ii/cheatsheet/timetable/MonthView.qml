@@ -663,7 +663,7 @@ Item {
                     Layout.fillWidth: true
                     spacing: -2
 
-                    StyledText {
+                    AnimatedStyledText {
                         Layout.fillWidth: true
                         text: Qt.formatDate(root.viewAnchorDate, "MMMM")
                         font.family: Appearance.font.family.title
@@ -956,7 +956,7 @@ Item {
                     colBackground: Appearance.colors.colPrimary
                     colBackgroundHover: Appearance.colors.colPrimaryHover
                     colBackgroundActive: Appearance.colors.colPrimaryActive
-                    enabled: CalendarService.khalAvailable
+                    enabled: CalendarService.canCreate
                     onClicked: root.requestCreate(root.viewingCurrentMonth ? DateTime.clock.date : root.viewAnchorDate)
 
                     contentItem: TaskShortcutContent {
@@ -1217,7 +1217,7 @@ Item {
     // ─── khal missing ───
     Rectangle {
         anchors.fill: parent
-        visible: !CalendarService.khalAvailable
+        visible: !CalendarService.eventsAvailable
         radius: Appearance.rounding.large
         color: Appearance.colors.colLayer0
         z: 90
@@ -1226,7 +1226,7 @@ Item {
             icon: "calendar_add_on"
             shape: "Cookie12Sided"
             title: Translation.tr("No calendar backend")
-            description: Translation.tr("Install khal to create and browse events here")
+            description: Translation.tr("Install khal, or share the phone's calendar with ii tools, to create and browse events here")
             animateIconOnShow: true
         }
     }

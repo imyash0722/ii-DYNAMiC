@@ -15,6 +15,8 @@ ColumnLayout {
     property var host: null
     readonly property var tile: panel.host?.tile ?? null
     readonly property var items: panel.tile?.items ?? []
+    // What the grid lists: the phone's recents, then the shelf's own files.
+    readonly property var entries: FileShelf.entries
     readonly property bool removeAfterDrag: Config.options?.dock?.utilities?.shelf?.removeAfterDrag ?? false
 
     spacing: 8
@@ -49,10 +51,70 @@ ColumnLayout {
         }
     }
 
+    // Send to a linked PC: drop files on its chip, or tap it to send this whole shelf.
+    Flow {
+        Layout.fillWidth: true
+        visible: FileShelf.pcEnabled && sendRepeater.count > 0
+        spacing: 8
+
+        Repeater {
+            id: sendRepeater
+            model: FileShelf.pcEnabled ? Object.keys(IiLinkService.pcConnections) : []
+
+            delegate: Rectangle {
+                id: chip
+                required property string modelData
+                readonly property string pcName: IiLinkService.pcConnections[chip.modelData]?.name || Translation.tr("PC")
+                implicitWidth: chipRow.implicitWidth + 28
+                implicitHeight: 44
+                radius: height / 2
+                color: drop.containsDrag ? ClockStyle.colPrimary : chipMouse.containsMouse ? ClockStyle.colSecondaryContainerHover : ClockStyle.colSecondaryContainer
+
+                RowLayout {
+                    id: chipRow
+                    anchors.centerIn: parent
+                    spacing: 6
+                    MaterialSymbol {
+                        text: "send_to_mobile"
+                        iconSize: 18
+                        color: drop.containsDrag ? ClockStyle.colOnPrimary : ClockStyle.colOnSecondaryContainer
+                    }
+                    StyledText {
+                        text: Translation.tr("Send to %1").arg(chip.pcName)
+                        color: drop.containsDrag ? ClockStyle.colOnPrimary : ClockStyle.colOnSecondaryContainer
+                        font.pixelSize: ClockStyle.textSmall
+                        font.weight: Font.DemiBold
+                    }
+                }
+
+                MouseArea {
+                    id: chipMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    enabled: panel.items.length > 0
+                    onClicked: FileShelf.sendToPc(chip.modelData, panel.items)
+                }
+
+                DropArea {
+                    id: drop
+                    anchors.fill: parent
+                    onDropped: d => {
+                        if (d.hasUrls)
+                            FileShelf.sendToPc(chip.modelData, d.urls);
+                    }
+                }
+            }
+        }
+    }
+
+    Component.onCompleted: FileShelf.watchPhone(true)
+    Component.onDestruction: FileShelf.watchPhone(false)
+
     FileGrid {
         Layout.fillWidth: true
-        visible: panel.items.length > 0
-        files: panel.items.slice().reverse().map(path => ({ path: path, name: UtilityFiles.baseName(path), modified: 0 }))
+        visible: panel.entries.length > 0
+        files: panel.entries.map(path => ({ path: path, name: FileShelf.name(path), modified: 0 }))
         showAge: false
         removable: true
         onRemoveRequested: path => panel.tile?.remove(path)
@@ -64,7 +126,7 @@ ColumnLayout {
 
     Rectangle {
         Layout.fillWidth: true
-        visible: panel.items.length === 0
+        visible: panel.entries.length === 0
         implicitHeight: 96
         radius: ClockStyle.radiusLarge
         color: ClockStyle.colField

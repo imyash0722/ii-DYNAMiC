@@ -17,7 +17,8 @@ AppSettingsPage {
     readonly property var timetable: Config.options.calendar.timetable
     readonly property var notifications: Config.options.calendar.timetable.notifications
     readonly property var imports: Config.options.calendar.timetable.imports
-    readonly property var writableCalendars: CalendarService.calendars.filter(calendar => !calendar.readOnly)
+    // khal's: phone calendars keep the phone's colors and are set up in their own section.
+    readonly property var writableCalendars: CalendarService.khalCalendars.filter(calendar => !calendar.readOnly)
     property string subscriptionDraft: ""
     property string outlookClientIdDraft: ""
 
@@ -98,7 +99,7 @@ AppSettingsPage {
         AppToggleRow {
             symbol: "cake"
             title: Translation.tr("Show contact birthdays")
-            description: Translation.tr("Projects birthdays from KDE Connect contacts as read-only entries without adding calendar events.")
+            description: Translation.tr("Projects birthdays from the phone's contacts as read-only entries without adding calendar events.")
             checked: root.timetable.birthdays.enable
             onToggled: value => root.timetable.birthdays.enable = value
         }
@@ -177,6 +178,11 @@ AppSettingsPage {
                     root.notifications.dailySummaryTime = value;
             }
         }
+    }
+
+    // Only with ii tools paired (or its last list kept): nothing changes for others.
+    PhoneCalendarSettings {
+        visible: IiLinkService.hasPeers || CalendarService.phoneFeed !== null
     }
 
     AppSettingsSection {

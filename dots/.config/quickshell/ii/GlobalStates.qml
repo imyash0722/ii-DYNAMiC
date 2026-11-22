@@ -1171,6 +1171,11 @@ Singleton {
     // parking away from it takes the guide off the screen it is guiding.
     property bool _editKeepWorkspace: false
 
+    // Emitted just before `editMode` turns true, so work that has to be done
+    // before the mode's entrance animation starts (the chrome compiling its
+    // surface on the first entry) runs ahead of `editProgress` moving.
+    signal editModeOpening()
+
     function openEditMode(monitor = "", keepWorkspace = false) {
         if (root.editMode)
             return;
@@ -1186,6 +1191,7 @@ Singleton {
         root.editModeMonitor = monitor !== "" ? monitor
             : (Hyprland.focusedMonitor?.name ?? Quickshell.primaryScreen?.name ?? "");
         root._editKeepWorkspace = keepWorkspace;
+        root.editModeOpening();
         root.editMode = true;
     }
 
@@ -1833,6 +1839,8 @@ Singleton {
 
     // LocalSend transfer popup
     property bool localSendPopupOpen: false
+    /** A file arriving from the ii tools app ("Send to PC"); IiLinkService.transfer has it. */
+    property bool phoneFilePopupOpen: false
     property var localSendPopupTransfer: null
     // Search's "Send with LocalSend" asks the dashboard to show its dialog. A
     // flag rather than a signal: the dashboard content may not exist until the

@@ -559,6 +559,19 @@ FloatingWindow {
                 return;
             }
         }
+        if (pending === "iiTools") {
+            const devicesIndex = root.pageIndexById("devicesPhone");
+            if (devicesIndex >= 0) {
+                root.currentPage = devicesIndex;
+                const targetSubPage = "devices/IiToolsConfig.qml";
+                if (pageLoader.status === Loader.Ready) {
+                    Qt.callLater(() => root.restoreSubPagePath(targetSubPage));
+                } else {
+                    root.pendingSubPage = targetSubPage;
+                }
+                return;
+            }
+        }
 
         const directIndex = root.pageIndexById(pending);
         if (directIndex >= 0) {
@@ -642,9 +655,14 @@ FloatingWindow {
     }
 
     title: "illogical-impulse Settings"
-    implicitWidth: 1100
-    implicitHeight: 750
-    minimumSize: Qt.size(750, 500)
+    // Clamped to the screen: on a 1366x768 laptop the fixed 750 px height (and minimum)
+    // ran past the bottom edge.
+    readonly property real screenWidth: root.screen?.width ?? 1920
+    readonly property real screenHeight: root.screen?.height ?? 1080
+    implicitWidth: Math.min(1100, Math.round(root.screenWidth * 0.92))
+    implicitHeight: Math.min(750, Math.round(root.screenHeight * 0.88))
+    minimumSize: Qt.size(Math.min(750, Math.round(root.screenWidth * 0.9)),
+        Math.min(500, Math.round(root.screenHeight * 0.75)))
     color: "transparent"
 
     Connections {

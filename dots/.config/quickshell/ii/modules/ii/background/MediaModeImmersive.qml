@@ -283,6 +283,20 @@ Item {
         }
     }
 
+    // Beat shake: one engine (one cava) for the frontend. The kinetic lyrics apply it to
+    // their camera; without them (no word-synced lyrics, or kinetic off) the artwork
+    // itself takes the hits, so every song gets the shake.
+    readonly property bool beatShakeOn: Config.options.background.mediaMode.kineticBeatShake ?? false
+    // The artwork shakes with the lyrics too: the whole frame moves, as in an edit.
+    readonly property bool artShakes: beatShakeOn && !root.context.videoActive
+    MediaModeBeatShake {
+        id: beatEngine
+        listening: root.beatShakeOn && root.visible && (root.context.player?.isPlaying ?? false)
+        swaying: listening && !root.context.videoActive
+        viewWidth: root.width
+        viewHeight: root.height
+    }
+
     // Everything the frosted surfaces blur: the artwork and what is drawn over it
     // (visualizers, kinetic lyrics). With the artwork alone as their backdrop,
     // the words passing under a surface were hidden by it instead of blurred.
@@ -298,6 +312,35 @@ Item {
             layout: root.artLayout
             panelProgress: root.panelProgress
             panelWashShown: !root.kineticShown
+            radialBlur: root.kineticShown
+            // The shake moves the artwork inside the shader, with its edges mirrored
+            // (Sapphire's Wrap: Reflect) instead of an overscan that crops the cover;
+            // plus the motion blur, turbulence, split and light, as on the lyrics.
+            layer.enabled: root.artShakes
+            layer.effect: ShaderEffect {
+                property vector2d velocity: {
+                    const v = beatEngine.shakeStreak;
+                    const length = Math.hypot(v.x, v.y);
+                    return length > 0.06 ? Qt.vector2d(v.x * 0.06 / length, v.y * 0.06 / length) : v;
+                }
+                property real zoomRate: Math.max(-0.1, Math.min(0.1, beatEngine.shakeZoomStreak))
+                property vector2d shadowOffset: Qt.vector2d(0, 0)
+                property vector2d texel: Qt.vector2d(1 / Math.max(1, artwork.width), 1 / Math.max(1, artwork.height))
+                property real shadowBlur: 0
+                property color shadowColor: "transparent"
+                property real fisheye: 0
+                property real aspect: artwork.width / Math.max(1, artwork.height)
+                property real glow: beatEngine.beatGlow * 0.5
+                property vector2d split: beatEngine.beatSplit
+                property real turbulence: beatEngine.beatTurbulence
+                property real turbSeed: beatEngine.turbSeed
+                property vector2d shakeOffset: Qt.vector2d((beatEngine.shakeX + beatEngine.swayX) / Math.max(1, artwork.width),
+                                                           (beatEngine.shakeY + beatEngine.swayY) / Math.max(1, artwork.height))
+                property real shakeRoll: (beatEngine.beatRoll + beatEngine.shakeRoll + beatEngine.swayRoll) * Math.PI / 180
+                property real shakeZoom: (1 + beatEngine.beatPunch) * (1 + beatEngine.shakeZoom) * (1 + beatEngine.swayZoom)
+                property real mirror: 1
+                fragmentShader: Qt.resolvedUrl("shaders/kineticCamera.frag.qsb")
+            }
             videoActive: root.context.videoActive
             tint: root.tint
             fieldColor: root.fieldColor
@@ -421,6 +464,7 @@ Item {
                     accentColor: root.kineticAccent
                     bottomInset: nowPlaying.height + root.gutter
                     fisheye: (Config.options.background.mediaMode.kineticFisheye ?? false) ? 0.7 : 0
+                    beat: beatEngine
                     Behavior on fisheye {
                         NumberAnimation {
                             duration: Appearance.animation.elementMove.duration
@@ -676,9 +720,14 @@ Item {
                         // MPRIS players can briefly report a position past the end of the
                         // track (most visibly right after a seek). Clamping here keeps a
                         // 3 minute song from ever displaying as 15 minutes.
+                        // MPRIS players go through the shell's track clock, like every
+                        // other progress surface: browsers re-anchor `position` to the
+                        // previous track's time on a track change, and the raw value
+                        // pinned this bar at 100 %. The local player reports truthfully.
                         readonly property real reportedPosition: Math.max(0, Math.min(trackLength,
-                                                                                      root.context.player?.position
-                                                                                      ?? 0))
+                            root.context.player?.dbusName !== undefined
+                                ? MprisController.trackPositionOf(root.context.player)
+                                : (root.context.player?.position ?? 0)))
                         // While a drag is in flight, and until the player confirms the new
                         // position, the slider owns its own value.
                         property real pendingSeekPosition: -1

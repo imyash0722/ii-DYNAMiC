@@ -195,8 +195,8 @@ Item {
             enabled: root._has("kdeconnect_sftp")
             transform: Translate { id: btn6Transform; y: 0 }
             onClicked: {
+                root._feedback(KdeConnectService.activeIsIi ? Translation.tr("Opening the phone's files…") : Translation.tr("Mounting SFTP storage…"), true)
                 KdeConnectService.browseFiles(root._devId)
-                root._feedback(Translation.tr("Mounting SFTP storage…"), true)
             }
         }
     }
@@ -219,7 +219,7 @@ Item {
         opacity: enabled ? 1.0 : 0.4
         scale: 1.0
 
-        contentItem: MaterialSymbol {
+        contentItem: AnimatedMaterialSymbol {
             anchors.centerIn: parent
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter

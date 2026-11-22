@@ -133,6 +133,13 @@ Singleton {
      */
     readonly property bool holdToReveal: Config.ready
         && (Config.options.dynamicIsland?.behavior?.holdToReveal === true)
+    /**
+     * Click to open the dashboard: a hover never opens it, a left click on the island
+     * does. Activities with an expanded card still expand on hover. Replaces hold to
+     * reveal, which is a hover gesture.
+     */
+    readonly property bool clickToOpenDashboard: Config.ready
+        && (Config.options.dynamicIsland?.behavior?.clickToOpenDashboard === true)
     /** How long that hold is, in milliseconds. */
     readonly property int holdToRevealMs: {
         const value = Config.ready ? Config.options.dynamicIsland?.behavior?.holdToRevealMs : undefined;
@@ -171,7 +178,7 @@ Singleton {
      * left the bubble sitting there. Click to expand is not a hover affordance, so it
      * falls back to the delay.
      */
-    readonly property int revealDwellMs: (root.holdToReveal && !root.clickToExpand)
+    readonly property int revealDwellMs: (root.holdToReveal && !root.clickToExpand && !root.clickToOpenDashboard)
         ? root.holdToRevealMs : root.hoverExpandDelayMs
 
     /**
@@ -242,6 +249,8 @@ Singleton {
     readonly property bool ownsOsd: root.enabled && root.widgetEnabled("osd")
     readonly property bool ownsModeFlash: root.enabled
     readonly property bool ownsBluetoothPopup: root.enabled && root.widgetEnabled("bluetooth")
+    /** Calls: the island's card; otherwise the corner popup (phoneCallPopup). */
+    readonly property bool ownsPhoneCall: root.enabled && root.widgetEnabled("phoneCall")
     readonly property bool ownsKeyboardPopup: root.enabled && root.widgetEnabled("keyboard")
     readonly property bool ownsLocalSendPopup: root.enabled && root.widgetEnabled("localSend")
     /** Whether the drag panel offers a KDE Connect column beside LocalSend. */

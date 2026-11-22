@@ -24,6 +24,8 @@
 #   restart                 Restart Quickshell (alias: run)
 #   doctor                  Report resolved paths, active state and tooling
 #   deps [add|remove|list]  Show, install or remove optional feature packages
+#   quickshell [action]     Install only the patched, fast-starting Quickshell
+#                           (install, the default | rebuild | restore | status)
 #   hyprset <args>          Write a Hyprland key or animation
 #   hyprmerge <args>        Merge a Hyprland config into the local one
 #   remove-cli              Remove the ii-p3drovfx symlink
@@ -48,7 +50,9 @@
 #       --no-restart          Leave Quickshell alone when finished
 #       --hypr                Install the fork's ~/.config/hypr files (recommended)
 #       --no-hypr             Never install them, never ask
-#       --rebuild-quickshell  Rebuild Quickshell from source first
+#       --rebuild-quickshell  Rebuild the patched Quickshell first
+#       --build-helpers       Build the C++ helpers here and keep those builds
+#       --prebuilt-helpers    Take the repository's C++ helper binaries again
 #       --skip-base-check     Do not require illogical-impulse to be present
 #       --ii-subdir <name>    Override ii* auto-detection in the clone
 #       --add <ids>           deps: install these features ("core": the required set)
@@ -73,9 +77,14 @@
 # feature, are only ever installed through `deps`; `deps --remove` uninstalls
 # only what `deps` itself installed, recorded in ~/.local/state/ii-p3drovfx.
 #
-# On Arch, `install` ends by putting the AUR quickshell-git back: the base
-# installer builds its own pinned quickshell and this fork is written against
-# master. That happens before any config lands, and asks first unless -y.
+# `install` ends by replacing the base's Quickshell with quickshell-ii-git:
+# upstream Quickshell at a pinned commit with the config's startup and memory
+# patches (scripts/quickshell-build), built as a native package on Arch and
+# Fedora. The stock build takes ~5 s to show the bar; the patched one under 2 s.
+# Every later deployment rebuilds it when the patches or build options changed. Where it
+# cannot be built, Arch falls back to the AUR's quickshell-git (the base pins an
+# older one) and other distributions keep the base's. That happens before any
+# config lands, and asks first unless -y. `quickshell` does only this step.
 #
 # Given neither --keep-config nor --reset-config, config.json is kept on
 # updates and branch hops and reset on fork switches, where the schema changes.
@@ -85,6 +94,14 @@
 # binds and rules. Given neither --hypr nor --no-hypr it is a question, which
 # -y answers "yes" like any other. The Settings update button passes one of the
 # two from its toggle; --no-hypr is the way to keep it out of a script.
+#
+# The nine C++ helpers (scripts/cpp-helpers.sh) run the binaries committed next
+# to their sources unless one was built here. A local build is kept across every
+# update, and rebuilt in the staged tree when its sources change; a rebuild that
+# cannot happen falls back to the repository's binary of the new sources and
+# says so. --build-helpers builds them all here (needs a C++ compiler,
+# pkg-config, glib2 and libxkbcommon headers); --prebuilt-helpers goes back to
+# the repository's. Either flag redeploys even when already up to date.
 #
 # Every successful config deployment opens the in-shell Welcome over IPC except
 # `update`. This does not depend on installing the fork's Hyprland files; their
@@ -202,12 +219,17 @@ PROTECTED_PATTERNS=(
     "scripts/touchGestures/touch_gestures"
     "scripts/tray/sni_watcher"
     "scripts/health/health_watch"
+    "scripts/iiLink/ii_link"
     "scripts/tests/test_fn_keys_and_touchpad_contract.py"
     # What each of those was built from. Carried for the same reason the binaries
     # are: without it every helper reads as "never verified" after every update,
     # and a warning that fires every time is one nobody reads.
     "scripts/*/.*.stamp"
 )
+# The C++ helpers are not in this list on purpose. The repository ships a binary
+# for each, so carrying the live one unconditionally would also pin a stale
+# committed binary over a newer one. native_helpers_step carries one only when
+# its stamp says it was built here, from the sources being deployed.
 
 # ── The fork's Hyprland config ───────────────────────────────────────────────
 # Everything under dots/.config/hypr is overlaid on ~/.config/hypr except the
@@ -238,6 +260,7 @@ OPT_II_SUBDIR=""
 OPT_RESTART=true
 OPT_FORCE=false
 OPT_HYPR="" # "" = ask (and -y accepts), true/false = explicit
+OPT_NATIVE="" # C++ helpers: "" = keep what each one is, source | prebuilt = explicit
 OPT_SKIP_BASE_CHECK=false
 OPT_ASCII=false
 OPT_NO_COLOR=false
@@ -248,6 +271,7 @@ PASSTHRU_ARGS=()
 DEPS_ACTION=""       # deps: "" (table, then pick) | list | add | remove
 DEPS_IDS=""          # deps: comma-separated feature ids
 DEPS_PRECONFIRMED=false
+QS_ACTION=""         # quickshell: install | rebuild | restore | status
 
 # ── Run state (used by the exit trap) ────────────────────────────────────────
 STAGE_DIR=""
@@ -1517,6 +1541,9 @@ fetch_source_locked() {
 # should be watching a dead panel while cargo runs.
 
 HELPERS_TO_BUILD=()
+# The ones the CI publishes prebuilt (rust-helpers.sh prebuilt): downloaded without a
+# question, built only when the download fails and cargo is here.
+HELPERS_TO_FETCH=()
 
 # The exception to the `missing` rule below. The others are features to opt into,
 # and compiling one nobody asked for would be a surprise; the tray watcher is a
@@ -1538,26 +1565,36 @@ offered_when_missing() {
 plan_helper_rebuild() {
     local stage="$1" script="$1/scripts/rust-helpers.sh"
     HELPERS_TO_BUILD=()
+    HELPERS_TO_FETCH=()
     # A fork without the script, or an older one. Nothing to say about it.
     [[ -f "$script" ]] || return 0
 
-    local -a names=() reasons=()
+    local -a names=() reasons=() prebuilt=()
     local name state
+    mapfile -t prebuilt < <(bash "$script" prebuilt 2>>"$LOG_FILE")
+    local reason
     while read -r name state; do
         case "$state" in
-        stale) reasons+=("behind its sources") ;;
-        unknown) reasons+=("build not recorded") ;;
+        stale) reason="behind its sources" ;;
+        unknown) reason="build not recorded" ;;
         # `missing` is left alone on purpose: a helper nobody ever compiled is
         # one nobody asked for, and compiling it here would be a surprise. The
         # list above is what that rule does not apply to.
         missing)
             offered_when_missing "$name" || continue
-            reasons+=("not built yet")
+            reason="not built yet"
             ;;
         *) continue ;;
         esac
+        # A download, not a compile: nothing to ask.
+        if printf '%s\n' "${prebuilt[@]}" | grep -qx "$name"; then
+            HELPERS_TO_FETCH+=("$name")
+            continue
+        fi
         names+=("$name")
+        reasons+=("$reason")
     done < <(bash "$script" status 2>>"$LOG_FILE")
+    ((${#HELPERS_TO_FETCH[@]} > 0)) && ui_note "Prebuilt helpers to update: ${HELPERS_TO_FETCH[*]} (downloaded after the swap)."
     ((${#names[@]} > 0)) || return 0
 
     ui_frame_open "Helpers"
@@ -1653,8 +1690,22 @@ offer_crash_access() {
 # run_helper_rebuild <target_dir> — builds what plan_helper_rebuild collected.
 run_helper_rebuild() {
     local target="$1" script="$1/scripts/rust-helpers.sh"
-    ((${#HELPERS_TO_BUILD[@]} > 0)) || return 0
     [[ -f "$script" ]] || return 0
+    # Prebuilt first: a download of the CI's build of these exact sources. One that
+    # cannot be had (offline, a fork, no release yet) is built here when cargo can.
+    local fetched
+    for fetched in "${HELPERS_TO_FETCH[@]}"; do
+        ui_step "Downloading $fetched"
+        if bash "$script" fetch "$fetched" >>"$LOG_FILE" 2>&1; then
+            ui_ok "$fetched" "updated (prebuilt)"
+        elif have cargo; then
+            ui_note "No prebuilt $fetched for these sources; building it here."
+            HELPERS_TO_BUILD+=("$fetched")
+        else
+            ui_fail "$fetched" "download failed — Settings → ii tools can retry or rebuild"
+        fi
+    done
+    ((${#HELPERS_TO_BUILD[@]} > 0)) || return 0
 
     local name dir lock total done_units crate rc built=0 failed=0
     for name in "${HELPERS_TO_BUILD[@]}"; do
@@ -1693,6 +1744,150 @@ run_helper_rebuild() {
     done
     ((failed > 0)) && ui_note "The old binary is still in place, so nothing stopped working."
     ui_logline "helpers: $built rebuilt, $failed failed"
+    return 0
+}
+
+#══════════════════════════════════════════════════════════════════════════════
+# C++ helpers
+#══════════════════════════════════════════════════════════════════════════════
+# Nine helpers ship twice: as C++ source and as a binary built from it, committed
+# beside it. The committed binary is the default and needs no compiler. Building
+# one here (scripts/cpp-helpers.sh build, or --build-helpers) replaces it at the
+# same path and leaves a stamp beside it, and from then on the stamp is the rule:
+#
+#   - a local build of the sources being deployed is carried across, and the
+#     repository's binary is dropped — the protection;
+#   - a local build of older sources is rebuilt here, in the staged tree, before
+#     the shell goes down, so it restarts onto binaries that match its QML;
+#   - a rebuild that cannot happen (no compiler, a missing library, a compile
+#     error) leaves the repository's committed binary in place, says so, and
+#     leaves a `fallback` stamp, so the next update tries again;
+#   - --prebuilt-helpers drops every local build and its stamp: the repository's
+#     binaries from then on, until something builds one again.
+#
+# Nobody who never built one hears a word from any of this.
+
+# native_helpers_step <live_dir> <stage_dir> — after carry_protected, before the swap.
+native_helpers_step() {
+    local live="$1" stage="$2" script="$2/scripts/cpp-helpers.sh"
+    [[ -f "$script" ]] || return 0
+    # Every call names its output root: an exported CPP_HELPERS_OUT_DIR must not
+    # send the stage's builds anywhere else.
+    local -a in_stage=(bash "$script" --out-dir "$stage")
+    # An unwritable --log-file would turn every redirect below into a failed
+    # command, and a build that never ran into "compile failed".
+    local log="$LOG_FILE"
+    { : >>"$log"; } 2>/dev/null || log=/dev/null
+
+    # Asked of the staged script with the live tree as its output root: live
+    # binaries and stamps, measured against the sources about to be deployed.
+    # No live tree (a first install): nothing was ever built here.
+    local -a names=() states=()
+    local name state
+    while read -r name state; do
+        [[ -n "$name" ]] || continue
+        names+=("$name")
+        states+=("$state")
+    done < <(if [[ -d "$live" ]]; then
+        bash "$script" --out-dir "$live" status 2>>"$log" || true
+    else
+        "${in_stage[@]}" list 2>>"$log" | sed 's/$/ prebuilt/' || true
+    fi)
+    ((${#names[@]} > 0)) || return 0
+
+    local i rel stamp
+    local -a want=() rows=()
+    local -A was=()
+    local kept=0 dropped=0
+    for i in "${!names[@]}"; do
+        name="${names[$i]}"
+        state="${states[$i]}"
+        was[$name]="$state"
+        rel="$("${in_stage[@]}" path "$name" 2>>"$log")" || continue
+        stamp="$(dirname "$rel")/.$name.stamp"
+        # Whatever carry_protected brought over is decided here instead.
+        rm -f "$stage/$stamp"
+        if [[ "$OPT_NATIVE" == prebuilt ]]; then
+            [[ "$state" == prebuilt || "$state" == missing ]] || dropped=$((dropped + 1))
+            continue
+        fi
+        case "$state" in
+        ok)
+            # Copied beside the target and renamed: a copy that fails partway (a
+            # full disk) must leave the repository's binary whole, not a
+            # truncated one that the rest of this step would take for it.
+            if ! cp -a "$live/$rel" "$stage/$rel.carry.$$" 2>>"$log" ||
+                ! cp -a "$live/$stamp" "$stage/$stamp.carry.$$" 2>>"$log" ||
+                ! mv -f "$stage/$stamp.carry.$$" "$stage/$stamp" ||
+                ! mv -f "$stage/$rel.carry.$$" "$stage/$rel"; then
+                rm -f "$stage/$rel.carry.$$" "$stage/$stamp.carry.$$" "$stage/$stamp"
+                want+=("$name")
+                continue
+            fi
+            ui_verbose "carried $rel (built here)"
+            kept=$((kept + 1))
+            ;;
+        stale | replaced | broken | fallback) want+=("$name") ;;
+        prebuilt | missing) [[ "$OPT_NATIVE" == source ]] && want+=("$name") ;;
+        esac
+    done
+
+    local built=0 fellback=0 unbuilt=0 unbuilt_why="" why line
+    if ((${#want[@]} > 0)); then
+        # A machine that cannot build is told once, in one line per helper, and
+        # keeps the repository's committed binaries.
+        declare -A missing_of=()
+        while IFS= read -r line; do
+            [[ "$line" == *" missing: "* ]] && missing_of[${line%% *}]="${line#* missing: }"
+        # `check` exits 1 when anything is missing, which is the point of asking;
+        # inside a process substitution that still fires the ERR trap.
+        done < <("${in_stage[@]}" check "${want[@]}" 2>>"$log" || true)
+        for name in "${want[@]}"; do
+            why="${missing_of[$name]:-}"
+            if [[ -z "$why" ]]; then
+                ui_step "Building $name"
+                if "${in_stage[@]}" build "$name" >>"$log" 2>&1; then
+                    ui_ok "$name" "built here"
+                    built=$((built + 1))
+                    continue
+                fi
+                why="compile failed"
+                ui_warn "$name: compile failed, see $(tilde "$LOG_FILE")"
+            else
+                why="no $why"
+            fi
+            # The staged binary is the repository's. Remember that a local build
+            # was wanted, unless the only one who wanted it was this run's flag.
+            case "${was[$name]}" in
+            prebuilt | missing)
+                unbuilt=$((unbuilt + 1))
+                [[ "$unbuilt_why" == *"$why"* ]] || unbuilt_why="${unbuilt_why:+$unbuilt_why; }$why"
+                ;;
+            *)
+                rows+=("$name"$'\t'"repository's binary ($why)")
+                "${in_stage[@]}" mark-fallback "$name" >>"$log" 2>&1 || true
+                fellback=$((fellback + 1))
+                ;;
+            esac
+        done
+    fi
+    ((unbuilt > 0)) && rows+=("not built"$'\t'"$unbuilt, the repository's kept ($unbuilt_why)")
+
+    ((dropped > 0)) && rows+=("local builds"$'\t'"$dropped dropped (--prebuilt-helpers)")
+    ((kept + built > 0)) && rows=("built here"$'\t'"$((kept + built)) ($kept kept, $built built)" "${rows[@]}")
+    ((${#rows[@]} > 0)) || return 0
+    ui_frame_open "C++ helpers"
+    local r
+    for r in "${rows[@]}"; do ui_kv "${r%%$'\t'*}" "${r#*$'\t'}"; done
+    ui_frame_close
+    if ((fellback > 0)); then
+        # Whatever the repository ships for them; the next update tries again.
+        ui_note "These run the repository's committed binary."
+        ui_note "Retried on every update. Build now:"
+        ui_note "  scripts/cpp-helpers.sh build-outdated"
+        ui_note "Keep the repository's: --prebuilt-helpers"
+    fi
+    ui_logline "cpp helpers: $kept kept, $built built, $fellback on the repository binary, $dropped dropped"
     return 0
 }
 
@@ -2126,6 +2321,133 @@ ensure_quickshell_git() {
     ui_ok "Quickshell" "$(pacman -Qq quickshell-git 2>/dev/null || printf 'quickshell-git')"
 }
 
+# ── Patched Quickshell (quickshell-ii-git) ───────────────────────────────────
+#
+# The stock Quickshell spends ~5-7 s scanning this config before any QML runs
+# and recompiles every QML file on every start. The config ships patches
+# and a builder (scripts/quickshell-build/qs-build.sh) that turn upstream
+# Quickshell at a pinned commit into a native package, quickshell-ii-git, which
+# replaces quickshell / quickshell-git on Arch (and derivatives) and Fedora.
+
+# The builder from the checkout this script runs from, else from the deployed
+# config (the CLI link runs the mirrored copy of this script, without dots/).
+qs_builder() {
+    local c
+    for c in "$SCRIPT_DIR"/dots/.config/quickshell/ii*/scripts/quickshell-build/qs-build.sh \
+        "${LOCAL_SRC:-/nonexistent}"/scripts/quickshell-build/qs-build.sh \
+        "${LOCAL_SRC:-/nonexistent}"/dots/.config/quickshell/ii*/scripts/quickshell-build/qs-build.sh \
+        "$TARGET_DIR/scripts/quickshell-build/qs-build.sh"; do
+        [[ -f "$c" ]] && {
+            printf '%s' "$c"
+            return 0
+        }
+    done
+    return 1
+}
+
+# run_qs_builder <install|rebuild|restore|status> — 0 done, 1 failed or
+# declined, 3 distribution not supported (or no builder in this version).
+run_qs_builder() {
+    local builder action="$1"
+    builder="$(qs_builder)" || {
+        ui_warn "This version of the config ships no Quickshell builder."
+        return 3
+    }
+    local -a args=("$action")
+    [[ "$OPT_ASSUME_YES" == true ]] && args+=(--yes)
+    [[ "$OPT_FORCE" == true && "$action" == install ]] && args+=(--force)
+    ui_info "Running $(tilde "$builder") ${args[*]} — its own output follows."
+    local rc=0
+    bash "$builder" "${args[@]}" || rc=$?
+    printf '\n'
+    return "$rc"
+}
+
+# ensure_quickshell — after a base install, put the patched Quickshell in place
+# of whatever the base installer left. Where it cannot be built (an unsupported
+# distribution, a failed build, or declined), Arch falls back to the AUR's
+# quickshell-git as before; other distributions keep what the base installed.
+ensure_quickshell() {
+    local rc=0
+    run_qs_builder install || rc=$?
+    case "$rc" in
+        0)
+            ui_ok "Quickshell" "quickshell-ii-git (patched for a fast start)"
+            return 0
+            ;;
+        3) ui_note "No patched Quickshell for this distribution; using the packaged one." ;;
+        *) ui_warn "The patched Quickshell was not installed; falling back to the packaged one." ;;
+    esac
+    ensure_quickshell_git
+}
+
+# patched_quickshell_step <config_dir> — during a deployment, on the staged
+# tree: rebuild quickshell-ii-git when that config builds it differently (other
+# patches, CMake options or packaging) from the installed package. The builder
+# compares a build stamp the package records, so no version bump is needed for
+# this to happen. Only where the patched package is installed: someone who
+# declined it or put the distribution's back is never asked here. Never with
+# --yes: agreeing to an update or a branch switch is not agreeing to replace a
+# system package, so the builder always asks (and declines without a terminal).
+# A "no" is written where the start guard looks, so the restart that follows
+# does not ask again; the guard offers it again after a week.
+patched_quickshell_step() {
+    local builder="$1/scripts/quickshell-build/qs-build.sh" state
+    [[ -f "$builder" ]] || return 0
+    state="$(bash "$builder" check 2>>"$LOG_FILE")" || return 0
+    [[ "$state" == outdated ]] || return 0
+    ui_note "This version builds Quickshell from other patches or build options than"
+    ui_note "the installed quickshell-ii-git, which is rebuilt to match (a few minutes)."
+    local rc=0
+    bash "$builder" install || rc=$?
+    printf '\n'
+    if ((rc == 0)); then
+        ui_ok "Quickshell" "quickshell-ii-git rebuilt; it runs from the restart below"
+        return 0
+    fi
+    ui_warn "quickshell-ii-git was not rebuilt; the shell keeps the installed build."
+    ui_note "Later: $CLI_NAME quickshell install"
+    local key offer="${XDG_STATE_HOME:-$HOME/.local/state}/quickshell/qs-build-offered"
+    key="$(bash "$builder" stamp 2>>"$LOG_FILE")" || key=""
+    if [[ -n "$key" ]]; then
+        mkdir -p "$(dirname "$offer")" && printf '%s %s\n' "$key" "$(date +%s)" >"$offer"
+    fi
+    return 0
+}
+
+# The `quickshell` command: install only the patched Quickshell (or put the
+# distribution's back), without touching the config.
+cmd_quickshell() {
+    local action="${QS_ACTION:-install}"
+    ui_banner "ii-p3drovfx" "quickshell" "$action"
+    case "$action" in
+        install | rebuild)
+            ui_note "Builds Quickshell with this fork's startup patches as the native"
+            ui_note "package quickshell-ii-git, replacing quickshell / quickshell-git."
+            ui_note "Takes a few minutes. '$CLI_NAME quickshell restore' undoes it."
+            printf '\n'
+            ;;
+    esac
+    local rc=0
+    run_qs_builder "$action" || rc=$?
+    if ((rc == 3)); then
+        ui_fail "Unsupported" "patched Quickshell packages are built for Arch and Fedora"
+        exit 1
+    fi
+    ((rc == 0)) || exit 1
+    case "$action" in
+        install | rebuild | restore)
+            if [[ -n "$(quickshell_pids)" ]]; then
+                if ui_confirm "Restart Quickshell now so it runs the new build?" yes; then
+                    restart_quickshell
+                else
+                    ui_note "It runs on the next restart or login."
+                fi
+            fi
+            ;;
+    esac
+}
+
 qt_mismatch() {
     have quickshell || return 1
     local msg
@@ -2134,6 +2456,15 @@ qt_mismatch() {
     ui_warn "Quickshell reports a Qt ABI/symbol mismatch:"
     ui_note "$msg"
     return 0
+}
+
+# rebuild_quickshell — the patched package where it can be built, else the
+# generic cmake build into ~/.local below.
+rebuild_quickshell() {
+    local rc=0
+    run_qs_builder rebuild || rc=$?
+    ((rc == 3)) || return "$rc"
+    build_quickshell
 }
 
 build_quickshell() {
@@ -2735,6 +3066,10 @@ apply_config() {
         # a package since the last update is exactly the case this is for.
         if [[ "$OPT_FORCE" == true ]]; then
             ui_note "Redeploying anyway (--force)."
+        elif [[ -n "$OPT_NATIVE" ]]; then
+            # The flag is about this tree's binaries, and only a deployment acts on it.
+            ui_note "Redeploying for --$([[ "$OPT_NATIVE" == source ]] && printf 'build' || printf 'prebuilt')-helpers."
+            CONFIRMED=true
         elif [[ "$OPT_ASSUME_YES" == true ]]; then
             deps_required_step "$TARGET_DIR"
             ui_result ok "already up to date $G_SEP $(ui_elapsed)" "Pass --force to redeploy."
@@ -2808,6 +3143,10 @@ apply_config() {
     chmod 0755 "$STAGE_DIR"
     ui_ok "Staged" "$carried protected file$([[ "$carried" == "1" ]] || printf 's') carried"
 
+    # Built here, before the swap: a few seconds each, and the shell then starts
+    # on C++ helpers that match the QML it runs.
+    native_helpers_step "$TARGET_DIR" "$STAGE_DIR"
+
     # Asked here, while the shell is still up and the user is still reading, and
     # acted on after it comes back. The staged tree is the right thing to ask:
     # new sources, and the binaries that were just carried onto them.
@@ -2816,6 +3155,11 @@ apply_config() {
     # Installed now rather than after the restart: the shell probes for most of
     # these once, when it starts, and would come up thinking they are missing.
     deps_required_step "$STAGE_DIR"
+
+    # Before the restart below, so the shell comes back on the new build and its
+    # start guard finds nothing to offer. The old shell keeps running meanwhile:
+    # pacman/dnf replace the binary under it.
+    patched_quickshell_step "$STAGE_DIR"
 
     # Mirror before the swap, never after. The settings panel runs the mirrored
     # copy, so a fault in swap_in used to be self-perpetuating: the swap failed,
@@ -3008,7 +3352,7 @@ cmd_install() {
 
     # Before any config files land, so the shell the user ends up looking at
     # is running the Quickshell this fork was written against.
-    ensure_quickshell_git
+    ensure_quickshell
 
     OPT_SKIP_BASE_CHECK=true
     apply_config "$url" "$branch" "$fork" "install"
@@ -3194,6 +3538,16 @@ cmd_doctor() {
         ui_kv "core" "${core:+missing: }${core:-all installed}"
         ui_kv "optional" "${optional:-0} installable feature$([[ "$optional" == 1 ]] || printf 's') not installed"
         ui_kv "manage" "$CLI_NAME deps"
+        ui_frame_close
+    fi
+
+    if [[ -f "$TARGET_DIR/scripts/cpp-helpers.sh" ]]; then
+        local name hstate
+        ui_frame_open "C++ helpers"
+        while read -r name hstate; do
+            [[ -n "$name" ]] && ui_kv "$name" "$hstate"
+        done < <(bash "$TARGET_DIR/scripts/cpp-helpers.sh" --out-dir "$TARGET_DIR" status 2>>"$LOG_FILE" || true)
+        ui_kv "manage" "$(tilde "$TARGET_DIR")/scripts/cpp-helpers.sh"
         ui_frame_close
     fi
 
@@ -3501,6 +3855,7 @@ show_help() {
     printf '  %s%-16s%s %s\n' "$C_OK" "restart" "$C_RST" "Restart Quickshell (alias: run)"
     printf '  %s%-16s%s %s\n' "$C_OK" "doctor" "$C_RST" "Report resolved paths, state and tooling"
     printf '  %s%-16s%s %s\n' "$C_OK" "deps" "$C_RST" "Show and install optional feature packages"
+    printf '  %s%-16s%s %s\n' "$C_OK" "quickshell [x]" "$C_RST" "Install only the fast patched Quickshell (install|rebuild|restore|status)"
     printf '  %s%-16s%s %s\n' "$C_OK" "hyprset" "$C_RST" "Write a Hyprland key/animation"
     printf '  %s%-16s%s %s\n' "$C_OK" "hyprmerge" "$C_RST" "Merge a Hyprland config into the local one"
     printf '  %s%-16s%s Remove the %s symlink\n' "$C_OK" "remove-cli" "$C_RST" "$CLI_NAME"
@@ -3523,7 +3878,9 @@ show_help() {
     printf '  %s%-24s%s %s\n' "$C_STEP" "    --no-restart" "$C_RST" "Leave Quickshell alone when finished"
     printf '  %s%-24s%s %s\n' "$C_STEP" "    --hypr" "$C_RST" "Install the fork's ~/.config/hypr files (recommended)"
     printf '  %s%-24s%s %s\n' "$C_STEP" "    --no-hypr" "$C_RST" "Never install them, never ask"
-    printf '  %s%-24s%s %s\n' "$C_STEP" "    --rebuild-quickshell" "$C_RST" "Rebuild Quickshell from source first"
+    printf '  %s%-24s%s %s\n' "$C_STEP" "    --rebuild-quickshell" "$C_RST" "Rebuild the patched Quickshell first"
+    printf '  %s%-24s%s %s\n' "$C_STEP" "    --build-helpers" "$C_RST" "Build the C++ helpers here and keep those builds"
+    printf '  %s%-24s%s %s\n' "$C_STEP" "    --prebuilt-helpers" "$C_RST" "Take the repository's C++ helper binaries again"
     printf '  %s%-24s%s %s\n' "$C_STEP" "    --skip-base-check" "$C_RST" "Do not require illogical-impulse to be present"
     printf '  %s%-24s%s %s\n' "$C_STEP" "    --ii-subdir <name>" "$C_RST" "Override ii* auto-detection in the clone"
     printf '  %s%-24s%s %s\n' "$C_STEP" "    --log-file <path>" "$C_RST" "Write the run log elsewhere"
@@ -3557,6 +3914,8 @@ show_help() {
     printf '  %sEvery successful apply, install or switch opens Welcome through the shell;%s\n' "$C_SUB" "$C_RST"
     printf '  %supdate is the only deployment that keeps it closed, with or without the%s\n' "$C_SUB" "$C_RST"
     printf '  %sfork'"'"'s Hyprland files.%s\n' "$C_SUB" "$C_RST"
+    printf '  %sC++ helpers built here (scripts/cpp-helpers.sh) are kept across updates%s\n' "$C_SUB" "$C_RST"
+    printf '  %sand rebuilt when their sources change; --prebuilt-helpers drops them.%s\n' "$C_SUB" "$C_RST"
     printf '  %sOptions take --flag=value as well as --flag value, and everything after%s\n' "$C_SUB" "$C_RST"
     printf '  %sa bare -- is passed through to hyprset/hyprmerge.%s\n' "$C_SUB" "$C_RST"
     printf '  %sAliases: --no-confirm/--noconfirm (-y), --preserve-config (--keep-config),%s\n' "$C_SUB" "$C_RST"
@@ -3692,6 +4051,14 @@ parse_args() {
                 OPT_SKIP_BASE_CHECK=true
                 shift
                 ;;
+            --build-helpers)
+                OPT_NATIVE=source
+                shift
+                ;;
+            --prebuilt-helpers)
+                OPT_NATIVE=prebuilt
+                shift
+                ;;
             --no-log)
                 OPT_LOG=false
                 shift
@@ -3764,7 +4131,7 @@ parse_args() {
         local first="${positional[0]}"
         case "$first" in
             apply | install | update | switch | fork | branch | list-forks | list-branches | \
-                restart | run | doctor | deps | remove-cli | hyprset | hyprmerge | help | version | demo)
+                restart | run | doctor | deps | quickshell | remove-cli | hyprset | hyprmerge | help | version | demo)
                 COMMAND="$first"
                 positional=("${positional[@]:1}")
                 ;;
@@ -3789,6 +4156,15 @@ parse_args() {
             ;;
         hyprset | hyprmerge)
             PASSTHRU_ARGS=("${positional[@]}" "${PASSTHRU_ARGS[@]+"${PASSTHRU_ARGS[@]}"}")
+            ;;
+        quickshell)
+            if ((${#positional[@]} > 0)); then
+                case "${positional[0]}" in
+                    install | rebuild | restore | status) QS_ACTION="${positional[0]}" ;;
+                    *) arg_error "quickshell takes install, rebuild, restore or status, not \"${positional[0]}\"" ;;
+                esac
+                ((${#positional[@]} == 1)) || arg_error "Unexpected argument \"${positional[1]}\""
+            fi
             ;;
         deps)
             # `deps add phone calendar` reads as well as `deps --add phone,calendar`.
@@ -3889,14 +4265,15 @@ main() {
             ;;
         doctor) cmd_doctor ;;
         deps) cmd_deps ;;
+        quickshell) cmd_quickshell ;;
         list-forks) cmd_list_forks ;;
         list-branches) cmd_list_branches ;;
         apply | install | update | switch)
             if [[ "$OPT_REBUILD_QS" == true ]]; then
-                build_quickshell || exit 1
+                rebuild_quickshell || exit 1
             elif [[ "$COMMAND" != "install" ]] && qt_mismatch; then
                 if ui_confirm "Rebuild Quickshell from source to match your Qt?"; then
-                    build_quickshell || exit 1
+                    rebuild_quickshell || exit 1
                 else
                     ui_note "Skipped. Crashes may persist until the ABI matches."
                 fi

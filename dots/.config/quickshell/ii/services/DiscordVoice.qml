@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Io
 import qs
 import qs.modules.common
+import qs.modules.common.functions
 
 Singleton {
     id: root
@@ -20,6 +21,7 @@ Singleton {
     property string errorMessage: ""
     property var currentUser: ({})
     property var channel: null
+    property double channelSince: 0
     property var participants: []
     readonly property alias participantModel: participantsModel
     readonly property int participantCount: participantsModel.count
@@ -35,6 +37,9 @@ Singleton {
     property var backendFeatures: []
     readonly property bool supportsUserVoice: backend === "discord"
         || backendFeatures.indexOf("userVoice") !== -1
+    // Video toggle is not in Discord's official RPC; only a companion build with "video" can offer it.
+    readonly property bool supportsVideo: backend === "vencord"
+        && backendFeatures.indexOf("video") !== -1
     // Installed and running, but built before per-user volume and the mode switch.
     readonly property bool companionOutdated: backend === "vencord"
         && backendFeatures.indexOf("userVoice") === -1
@@ -286,12 +291,20 @@ Singleton {
             currentUser = message.user || {};
             restartAttempts = 0;
             break;
-        case "voice_channel":
-            diffMembers(message.users, String(message.channel?.id ?? ""));
-            if (!message.channel) clearNotices();
+        case "voice_channel": {
+            const prevChannelId = String(channel?.id ?? "");
+            const nextChannelId = String(message.channel?.id ?? "");
+            diffMembers(message.users, nextChannelId);
+            if (!message.channel) {
+                clearNotices();
+                channelSince = 0;
+            } else if (nextChannelId !== prevChannelId || channelSince <= 0) {
+                channelSince = Date.now();
+            }
             channel = message.channel || null;
             updateParticipants(message.users);
             break;
+        }
         case "voice_state":
             diffMembers(message.users, String(channel?.id ?? ""));
             updateParticipants(message.users);
@@ -323,7 +336,7 @@ Singleton {
         case "companion_error": errorMessage = message.message || ""; break;
         case "disconnected":
             status = "disconnected"; backend = ""; backendFeatures = []; inputMode = "";
-            channel = null; _noticeChannelId = ""; clearNotices(); updateParticipants([]);
+            channel = null; channelSince = 0; _noticeChannelId = ""; clearNotices(); updateParticipants([]);
             reconnectTimer.restart();
             break;
         case "error":
@@ -404,7 +417,7 @@ Singleton {
 
     Process {
         id: bridge
-        command: ["python3", `${Directories.scriptPath}/discordVoice/discord_voice_bridge.py`]
+        command: ProcUtils.nativeHelper(`${Directories.scriptPath}/discordVoice/discord_voice_bridge`)
         stdinEnabled: true
         onStarted: root.flushPendingMessages()
         // process-lifecycle: restart-safe -- capped exponential backoff; no running binding.
@@ -412,6 +425,7 @@ Singleton {
         stderr: SplitParser { onRead: data => console.warn("[DiscordVoice]", data) }
         onExited: (code, status) => {
             root.channel = null;
+            root.channelSince = 0;
             root._noticeChannelId = "";
             root.clearNotices();
             root.updateParticipants([]);

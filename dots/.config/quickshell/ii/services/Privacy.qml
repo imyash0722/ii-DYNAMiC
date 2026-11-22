@@ -35,19 +35,30 @@ Singleton {
 
     // ── Gating: run probe in background only when needed ─────────────────────
     // Run only when:
-    // 1. privacy pill widget is in bar layouts (and visible), OR
+    // 1. privacy pill widget is in bar layouts, OR
     // 2. Dynamic Island is enabled AND privacy toggle in Dynamic Island is enabled.
     readonly property bool barWidgetPresent: {
         const layouts = Config.options?.bar?.layouts;
         if (!layouts)
             return false;
-        const inBucket = list => Array.isArray(list) && list.some(item => item && item.id === "privacy_pill" && item.visible !== false);
+        const inBucket = list => {
+            if (!list || typeof list.length !== "number")
+                return false;
+            for (let i = 0; i < list.length; ++i) {
+                const item = list[i];
+                if (item && item.id === "privacy_pill")
+                    return true;
+            }
+            return false;
+        };
         return inBucket(layouts.left) || inBucket(layouts.center) || inBucket(layouts.right);
     }
 
     readonly property bool islandWidgetPresent: IslandPolicy.enabled && IslandPolicy.widgetEnabled("privacy")
 
-    readonly property bool needed: root.enabled && root.watchedKinds.length > 0 && (root.barWidgetPresent || root.islandWidgetPresent)
+    property bool externalWanted: false
+
+    readonly property bool needed: (root.enabled && root.watchedKinds.length > 0 && (root.barWidgetPresent || root.islandWidgetPresent)) || root.externalWanted
 
     readonly property var watchedKinds: {
         const cfg = root._cfg;
@@ -62,6 +73,8 @@ Singleton {
             kinds.push("location");
         return kinds;
     }
+
+    readonly property var effectiveKinds: root.watchedKinds.length > 0 ? root.watchedKinds : ["camera", "microphone", "screen"]
 
     // Kinds in a fixed order, so the pill never reshuffles its icons just
     // because the probe happened to list a stream first this time.
@@ -189,14 +202,12 @@ Singleton {
         // the shell. Without it, a SIGKILL'd/crashed Quickshell left the probe
         // reparented to init, and the next instance spawned a second one
         // (the duplicate privacy_probe processes seen after a manual restart).
-        command: ProcUtils.pdeath([
-            "python3",
-            Directories.scriptPath + "/privacy_probe.py",
+        command: ProcUtils.pdeath(ProcUtils.nativeHelper(Directories.scriptPath + "/privacy_probe", [
             "--interval",
             String(root.pollInterval),
             "--kinds",
-            root.watchedKinds.join(",")
-        ])
+            root.effectiveKinds.join(",")
+        ]))
 
         // process-lifecycle: restart-safe -- capped backoff; no running binding,
         // so a settings change restarts it deliberately instead of thrashing.

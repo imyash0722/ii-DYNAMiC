@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import qs
+import qs.services
 import "UtilityFiles.js" as UtilityFiles
 
 /**
@@ -24,19 +25,35 @@ MouseArea {
     cursorShape: Qt.PointingHandCursor
     hoverEnabled: true
 
+    // A phone's or another PC's entry is only a thumbnail here: its file starts coming over
+    // when the pointer lingers (phone) or presses, and the drag begins once it is on this PC.
+    readonly property bool hasPhone: area.paths.some(p => FileShelf.isRemote(p))
+    // Only the phone's photos on hover: another PC's file may be large, so it waits for a press.
+    readonly property bool hoverFetch: area.paths.some(p => FileShelf.isPhone(p))
+    Timer {
+        interval: 180
+        running: area.hoverFetch && area.containsMouse
+        onTriggered: area.paths.forEach(p => FileShelf.prepare(p))
+    }
+
     onPressed: event => {
         area.pressPoint = Qt.point(event.x, event.y);
         area.dragging = false;
+        if (area.hasPhone)
+            area.paths.forEach(p => FileShelf.prepare(p));
     }
     onPositionChanged: event => {
         if (!area.pressed || area.dragging || area.paths.length === 0)
             return;
         if (Math.abs(event.x - area.pressPoint.x) + Math.abs(event.y - area.pressPoint.y) < 8)
             return;
+        const files = FileShelf.resolve(area.paths);
+        if (files === null)
+            return;
         area.dragging = true;
         GlobalStates.fileDragActive = true;
         try {
-            dragProxy.Drag.mimeData = { "text/uri-list": UtilityFiles.uriList(area.paths) };
+            dragProxy.Drag.mimeData = { "text/uri-list": UtilityFiles.uriList(files) };
             dragProxy.Drag.imageSource = Quickshell.iconPath(area.dragIcon, "text-x-generic");
             dragProxy.Drag.active = true;
             dragProxy.Drag.startDrag(Qt.CopyAction);
