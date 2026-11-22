@@ -1,6 +1,6 @@
 <div align="center">
 
-# ii-DYNAMiC$
+# ii-DYNAMiC
 
 ```
 =====================================================
@@ -70,7 +70,7 @@ A customized fork of **[ii-p3drovfx](https://github.com/P3DROVFX/ii-p3drovfx)** 
 
 ### Default Installation (Full Setup)
 
-Installs the base dotfiles and applies the **ii-DYNAMiC$** configuration:
+Installs the base dotfiles and applies the **ii-DYNAMiC** configuration:
 
 ```bash
 git clone --recurse-submodules https://github.com/imyash0722/ii-DYNAMiC.git
@@ -98,7 +98,7 @@ Update effortlessly from within the shell (**Settings → About**) or directly f
 ./setup-ii-p3drovfx.sh update
 ```
 
-The shell update checker and installer automatically recognize `ii-DYNAMiC$` and keep all customizations and hardware protections preserved across updates.
+The shell update checker and installer automatically recognize `ii-DYNAMiC` and keep all customizations and hardware protections preserved across updates.
 
 ---
 
@@ -155,5 +155,5 @@ Special credit and gratitude to **[P3DROVFX](https://github.com/P3DROVFX/ii-p3dr
 <br>
 
 <div align="center">
-  <b>⭐ If you find ii-DYNAMiC$ useful, consider starring the repository!</b>
+  <b>⭐ If you find ii-DYNAMiC useful, consider starring the repository!</b>
 </div>

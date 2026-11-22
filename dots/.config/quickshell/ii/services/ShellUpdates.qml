@@ -130,7 +130,7 @@ Singleton {
         case "ii-dynamic":
         case "ii-DYNAMiC":
         case "ii-DYNAMiC-":
-            return "ii-DYNAMiC$";
+            return "ii-DYNAMiC";
         case "p3drovfx":
         case "mine":
             return "II-P3DROVFX";
@@ -142,7 +142,7 @@ Singleton {
         default:
             const slug = root.githubSlug(root.activeRemote);
             if (slug.includes("ii-DYNAMiC") || slug.includes("dynamic-island")) {
-                return "ii-DYNAMiC$";
+                return "ii-DYNAMiC";
             }
             return slug || fork || Translation.tr("Unknown fork");
         }

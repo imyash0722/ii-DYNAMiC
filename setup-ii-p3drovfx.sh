@@ -2754,6 +2754,8 @@ install_cli() {
     chmod +x "$script" 2>/dev/null || true
     ln -sfn "$script" "$BIN_DIR/$CLI_NAME"
     ln -sfn "$script" "$BIN_DIR/$CLI_ALIAS"
+    ln -sfn "$script" "$BIN_DIR/ii-dynamic"
+    ln -sfn "$script" "$BIN_DIR/ii-DYNAMiC"
     if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
         ui_warn "$(tilde "$BIN_DIR") is not on PATH."
         ui_note "Add to your shell rc:  set -gx PATH \$HOME/.local/bin \$PATH"
@@ -3228,7 +3230,27 @@ apply_config() {
 # touches it. Reset it only when the schema is likely to have changed.
 handle_base_config() {
     local verb="$1" prev_fork="${2:-}" fork="${3:-}"
-    [[ -f "$BASE_CONFIG_FILE" ]] || return 0
+    local default_config_dir="${repo_root:-$LOCAL_SRC}/dots/.config/illogical-impulse"
+
+    # Updates must NEVER modify user configurations
+    if [[ "$verb" == "update" ]]; then
+        ui_note "Kept user configuration ($(tilde "$BASE_CONFIG_FILE"))."
+        return 0
+    fi
+
+    # Fresh install (or if user config does not exist yet): deploy fork default config
+    if [[ "$verb" == "install" || ! -f "$BASE_CONFIG_FILE" ]]; then
+        mkdir -p "$BASE_DIR"
+        if [[ -f "$default_config_dir/config.json" ]]; then
+            cp -f "$default_config_dir/config.json" "$BASE_CONFIG_FILE"
+            ui_ok "Default config" "Applied fork default config.json"
+        fi
+        if [[ -f "$default_config_dir/local-preferences.json" ]]; then
+            cp -f "$default_config_dir/local-preferences.json" "$BASE_DIR/local-preferences.json"
+            ui_ok "Default preferences" "Applied fork default local-preferences.json"
+        fi
+        return 0
+    fi
 
     local keep="$OPT_KEEP_CONFIG"
     if [[ -z "$keep" ]]; then
@@ -3252,6 +3274,10 @@ handle_base_config() {
     dest="${BASE_CONFIG_FILE}.bak-$(date +%Y%m%d-%H%M%S)"
     mv "$BASE_CONFIG_FILE" "$dest"
     ui_ok "Reset" "config.json $G_ARROW $(basename "$dest")"
+    if [[ -f "$default_config_dir/config.json" ]]; then
+        cp -f "$default_config_dir/config.json" "$BASE_CONFIG_FILE"
+        ui_ok "Default config" "Restored fork default config.json"
+    fi
     return 0
 }
 

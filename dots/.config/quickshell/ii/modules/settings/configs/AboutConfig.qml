@@ -920,7 +920,7 @@ Item {
                     topLeftRadius: Appearance.rounding.large
                     title: Translation.tr("This fork")
                     icon: "call_split"
-                    name: ShellUpdates.forkLabel(ShellUpdates.activeFork) || "ii-DYNAMiC$"
+                    name: ShellUpdates.forkLabel(ShellUpdates.activeFork) || "ii-DYNAMiC"
                     url: ShellUpdates.activeRemote || "https://github.com/imyash0722/ii-DYNAMiC"
                     links: [
                         { "icon": "code", "label": Translation.tr("GitHub"), "url": ShellUpdates.activeRemote || "https://github.com/imyash0722/ii-DYNAMiC" },

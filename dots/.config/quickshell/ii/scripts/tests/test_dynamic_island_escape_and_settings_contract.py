@@ -74,7 +74,7 @@ class DynamicIslandEscapeAndSettingsContractTests(unittest.TestCase):
         self.assertIn('FALLBACK_URL="https://github.com/imyash0722/ii-DYNAMiC"', SETUP_SCRIPT)
         self.assertIn('FALLBACK_BRANCH="dev"', SETUP_SCRIPT)
         self.assertIn('case "dynamic-island":', SHELL_UPDATES)
-        self.assertIn('"ii-DYNAMiC$"', SHELL_UPDATES)
+        self.assertIn('"ii-DYNAMiC"', SHELL_UPDATES)
 
     def test_dynamic_island_uniform_workspace_and_clock_scaling(self):
         self.assertIn('let widest = wsModel.labelFor(10) || "10";', INDEX_WORKSPACES)

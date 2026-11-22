@@ -1,6 +1,6 @@
-# Changelog & Architectural Enhancements: ii-DYNAMiC$
+# Changelog & Architectural Enhancements: ii-DYNAMiC
 
-This document details all architectural improvements, autohide engine rebuilds, keyboard interactions, upstream merges, and installer adaptations implemented in this fork (**ii-DYNAMiC$**).
+This document details all architectural improvements, autohide engine rebuilds, keyboard interactions, upstream merges, and installer adaptations implemented in this fork (**ii-DYNAMiC**).
 
 ---
 
@@ -28,7 +28,7 @@ Adapted `setup-ii-p3drovfx.sh`, `ShellUpdates.qml`, `AboutConfig.qml`, and `READ
 - **Protected Files Extension**:
   - Registered `modules/common/widgets/NotificationAppIcon.qml` in `PROTECTED_PATTERNS` so upstream or external updates never overwrite the glyph sanitization fix.
 - **Dynamic Fork Labeling in UI**:
-  - Updated `ShellUpdates.qml` to display `ii-DYNAMiC$` for the active fork.
+  - Updated `ShellUpdates.qml` to display `ii-DYNAMiC` for the active fork.
   - Dynamically bound "This fork" and GitHub links in `AboutConfig.qml` and `WelcomeProjectLinks.qml` to the active remote repository.
 - **Clone Instructions**:
   - Updated main `README.md` and `.github/README.md` install instructions to clone `https://github.com/imyash0722/ii-DYNAMiC.git`.
