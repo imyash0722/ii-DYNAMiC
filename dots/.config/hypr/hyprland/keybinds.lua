@@ -15,10 +15,10 @@ local qsIsAlive = qsIpcCall .. " TEST_ALIVE"
 -- Super taps are release binds: since Hyprland 0.57 a plain "SUPER + SUPER_L" bind
 -- fires on the press and always delivers its release, even after Super+A. A release
 -- bind is shadowed by any key pressed in between, so only a lone tap reaches it.
-hl.bind("SUPER + SUPER_L", hl.dsp.global("quickshell:searchToggleRelease"), { release = true, description = "Shell: Toggle search" })
-hl.bind("SUPER + SUPER_R", hl.dsp.global("quickshell:searchToggleRelease"), { release = true })
-hl.bind("SUPER + SUPER_L", hl.dsp.exec_cmd(qsIsAlive .. " || pkill fuzzel || fuzzel"), { release = true })
-hl.bind("SUPER + SUPER_R", hl.dsp.exec_cmd(qsIsAlive .. " || pkill fuzzel || fuzzel"), { release = true })
+hl.bind("SUPER + SUPER_L", hl.dsp.global("quickshell:dynamicIslandDashboardToggleRelease"), { release = true, description = "Dynamic Island: Toggle widgets dashboard" })
+hl.bind("SUPER + SUPER_R", hl.dsp.global("quickshell:dynamicIslandDashboardToggleRelease"), { release = true })
+hl.bind("SUPER + SUPER_L", hl.dsp.exec_cmd(qsIsAlive .. " || " .. qsIpcCall .. " dynamicIsland toggleDashboard || pkill fuzzel || fuzzel"), { release = true })
+hl.bind("SUPER + SUPER_R", hl.dsp.exec_cmd(qsIsAlive .. " || " .. qsIpcCall .. " dynamicIsland toggleDashboard || pkill fuzzel || fuzzel"), { release = true })
 
 hl.bind("SUPER_L", hl.dsp.global("quickshell:workspaceNumber"), { ignore_mods = true, transparent = true })
 hl.bind("SUPER_R", hl.dsp.global("quickshell:workspaceNumber"), { ignore_mods = true, transparent = true })
@@ -42,23 +42,23 @@ hl.bind("SUPER + ALT + A", hl.dsp.global("quickshell:sidebarLeftToggleDetach"))
 hl.bind("SUPER + B", hl.dsp.global("quickshell:sidebarLeftToggle"))
 hl.bind("SUPER + O", hl.dsp.global("quickshell:sidebarLeftToggle"))
 hl.bind("SUPER + N", hl.dsp.global("quickshell:sidebarRightToggle"), { description = "Shell: Toggle right sidebar" })
--- Dynamic Island: Copilot key toggles widgets dashboard
+-- Overview: Copilot key toggles workspaces overview
 -- Hardware emits Super+Shift+F23 (KEY_F23 = evdev 193 -> XKB code:201).
 -- In XKB (symbols/inet), keycode 201 resolves to XF86Assistant under Shift+Super, or legacy
 -- XF86TouchpadOff / F23 on standard PC layouts. Bind both keysyms and raw keycodes so all variants
--- cleanly open Dynamic Island.
-hl.bind("SUPER + SHIFT + F23", hl.dsp.global("quickshell:dynamicIslandDashboardToggle"),
-    { description = "Dynamic Island: Toggle widgets dashboard" })
-hl.bind("F23", hl.dsp.global("quickshell:dynamicIslandDashboardToggle"),
-    { description = "Dynamic Island: Toggle widgets dashboard" })
-hl.bind("XF86Assistant", hl.dsp.global("quickshell:dynamicIslandDashboardToggle"),
-    { description = "Dynamic Island: Toggle widgets dashboard" })
-hl.bind("SUPER + SHIFT + XF86Assistant", hl.dsp.global("quickshell:dynamicIslandDashboardToggle"),
-    { description = "Dynamic Island: Toggle widgets dashboard" })
-hl.bind("code:201", hl.dsp.global("quickshell:dynamicIslandDashboardToggle"),
-    { description = "Dynamic Island: Toggle widgets dashboard" })
-hl.bind("SUPER + SHIFT + code:201", hl.dsp.global("quickshell:dynamicIslandDashboardToggle"),
-    { description = "Dynamic Island: Toggle widgets dashboard" })
+-- cleanly toggle workspaces overview.
+hl.bind("SUPER + SHIFT + F23", hl.dsp.global("quickshell:overviewWorkspacesToggle"),
+    { description = "Shell: Toggle overview" })
+hl.bind("F23", hl.dsp.global("quickshell:overviewWorkspacesToggle"),
+    { description = "Shell: Toggle overview" })
+hl.bind("XF86Assistant", hl.dsp.global("quickshell:overviewWorkspacesToggle"),
+    { description = "Shell: Toggle overview" })
+hl.bind("SUPER + SHIFT + XF86Assistant", hl.dsp.global("quickshell:overviewWorkspacesToggle"),
+    { description = "Shell: Toggle overview" })
+hl.bind("code:201", hl.dsp.global("quickshell:overviewWorkspacesToggle"),
+    { description = "Shell: Toggle overview" })
+hl.bind("SUPER + SHIFT + code:201", hl.dsp.global("quickshell:overviewWorkspacesToggle"),
+    { description = "Shell: Toggle overview" })
 --##! Modules
 hl.bind("SUPER + Slash", hl.dsp.global("quickshell:cheatsheetToggle"), { description = "Shell: Toggle cheatsheet" })
 -- Super+Shift+N is already Next track, further down. The notes keep the same letter

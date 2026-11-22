@@ -36,30 +36,44 @@ class CopilotKeyContractTests(unittest.TestCase):
 
     def test_keybinds_registers_copilot_combinations(self):
         self.assertIn(
-            'hl.bind("SUPER + SHIFT + F23", hl.dsp.global("quickshell:dynamicIslandDashboardToggle")',
+            'hl.bind("SUPER + SHIFT + F23", hl.dsp.global("quickshell:overviewWorkspacesToggle")',
             self.keybinds,
         )
         self.assertIn(
-            'hl.bind("F23", hl.dsp.global("quickshell:dynamicIslandDashboardToggle")',
+            'hl.bind("F23", hl.dsp.global("quickshell:overviewWorkspacesToggle")',
             self.keybinds,
         )
         self.assertIn(
-            'hl.bind("XF86Assistant", hl.dsp.global("quickshell:dynamicIslandDashboardToggle")',
+            'hl.bind("XF86Assistant", hl.dsp.global("quickshell:overviewWorkspacesToggle")',
             self.keybinds,
         )
         self.assertIn(
-            'hl.bind("code:201", hl.dsp.global("quickshell:dynamicIslandDashboardToggle")',
+            'hl.bind("code:201", hl.dsp.global("quickshell:overviewWorkspacesToggle")',
             self.keybinds,
         )
         self.assertIn(
-            'hl.bind("SUPER + SHIFT + code:201", hl.dsp.global("quickshell:dynamicIslandDashboardToggle")',
+            'hl.bind("SUPER + SHIFT + code:201", hl.dsp.global("quickshell:overviewWorkspacesToggle")',
             self.keybinds,
         )
         self.assertNotIn("XF86CoPilot", self.keybinds)
         self.assertIn(
-            'description = "Dynamic Island: Toggle widgets dashboard"',
+            'description = "Shell: Toggle overview"',
             self.keybinds,
         )
+
+        # Super key click / release must toggle Dynamic Island dashboard
+        self.assertIn(
+            'hl.bind("SUPER + SUPER_L", hl.dsp.global("quickshell:dynamicIslandDashboardToggleRelease"), { release = true',
+            self.keybinds,
+        )
+        self.assertIn(
+            'hl.bind("SUPER + SUPER_R", hl.dsp.global("quickshell:dynamicIslandDashboardToggleRelease"), { release = true',
+            self.keybinds,
+        )
+
+        # Standard Super key chorded shortcuts must remain preserved
+        self.assertIn('hl.bind("SUPER + S",', self.keybinds)
+        self.assertIn('hl.bind("SUPER + A",', self.keybinds)
 
         # XF86TouchpadOff must not ignore mods so it never steals Copilot keyevents
         off_match = re.search(
@@ -73,6 +87,7 @@ class CopilotKeyContractTests(unittest.TestCase):
         self.assertIn("signal toggleIslandDashboardRequested()", self.global_states)
         self.assertIn("function toggleDynamicIslandDashboard()", self.global_states)
         self.assertIn('name: "dynamicIslandDashboardToggle"', self.global_states)
+        self.assertIn('name: "dynamicIslandDashboardToggleRelease"', self.global_states)
         self.assertIn("root.toggleDynamicIslandDashboard()", self.global_states)
 
     def test_notch_island_handles_toggle_signal(self):

@@ -3710,6 +3710,30 @@ Singleton {
     }
 
     GlobalShortcut {
+        name: "dynamicIslandDashboardToggleRelease"
+        description: "Toggles the dynamic island widgets dashboard on release"
+
+        property int _lastToggleTime: 0
+
+        onPressed: {
+            root.superReleaseMightTrigger = true;
+        }
+
+        onReleased: {
+            const now = Date.now();
+            if (now - _lastToggleTime < 50)
+                return;
+            _lastToggleTime = now;
+
+            if (!root.superReleaseMightTrigger) {
+                root.superReleaseMightTrigger = true;
+                return;
+            }
+            root.toggleDynamicIslandDashboard();
+        }
+    }
+
+    GlobalShortcut {
         name: "workspaceNumber"
         description: "Hold to show workspace numbers, release to show icons"
         onPressed: {
