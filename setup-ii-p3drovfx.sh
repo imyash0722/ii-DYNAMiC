@@ -167,9 +167,9 @@ BACKUPS_TO_KEEP=3
 
 # ── Fork presets ─────────────────────────────────────────────────────────────
 declare -A PRESET_URLS=(
-    ["dynamic"]="https://github.com/imyash0722/ii-DYNAMiC-"
-    ["dynamic-island"]="https://github.com/imyash0722/ii-DYNAMiC-"
-    ["mine"]="https://github.com/imyash0722/ii-DYNAMiC-"
+    ["dynamic"]="https://github.com/imyash0722/ii-DYNAMiC"
+    ["dynamic-island"]="https://github.com/imyash0722/ii-DYNAMiC"
+    ["mine"]="https://github.com/imyash0722/ii-DYNAMiC"
     ["p3drovfx"]="https://github.com/P3DROVFX/ii-p3drovfx"
     ["end4"]="https://github.com/end-4/dots-hyprland"
     ["vynx"]="https://github.com/vaguesyntax/ii-vynx"
@@ -186,14 +186,14 @@ declare -A PRESET_BRANCHES=(
 )
 # Canonical id per URL, so aliases collapse to one name in the UI and state files.
 declare -A PRESET_CANONICAL=(
-    ["https://github.com/imyash0722/ii-DYNAMiC-"]="dynamic-island"
     ["https://github.com/imyash0722/ii-DYNAMiC"]="dynamic-island"
+    ["https://github.com/imyash0722/ii-DYNAMiC-"]="dynamic-island"
     ["https://github.com/imyash0722/ii-p3drovfx-dynamic-island"]="dynamic-island"
     ["https://github.com/P3DROVFX/ii-p3drovfx"]="p3drovfx"
     ["https://github.com/end-4/dots-hyprland"]="end4"
     ["https://github.com/vaguesyntax/ii-vynx"]="vynx"
 )
-FALLBACK_URL="https://github.com/imyash0722/ii-DYNAMiC-"
+FALLBACK_URL="https://github.com/imyash0722/ii-DYNAMiC"
 FALLBACK_BRANCH="dev"
 
 # Where `install` gets the base illogical-impulse dotfiles from. Always end-4's

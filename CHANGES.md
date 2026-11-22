@@ -20,9 +20,9 @@ Successfully merged upstream `P3DROVFX/ii-p3drovfx@dev` with zero conflicts, bri
 
 Adapted `setup-ii-p3drovfx.sh`, `ShellUpdates.qml`, `AboutConfig.qml`, and `README.md` to ensure that installing or updating directly from this repository works seamlessly out of the box:
 - **Preset & Fallback Configuration**:
-  - Added preset `dynamic` and `dynamic-island` pointing to `https://github.com/imyash0722/ii-DYNAMiC-` branch `dev`.
-  - Configured alias `mine` to point to `https://github.com/imyash0722/ii-DYNAMiC-`.
-  - Set `FALLBACK_URL="https://github.com/imyash0722/ii-DYNAMiC-"` and `FALLBACK_BRANCH="dev"`.
+  - Added preset `dynamic` and `dynamic-island` pointing to `https://github.com/imyash0722/ii-DYNAMiC` branch `dev`.
+  - Configured alias `mine` to point to `https://github.com/imyash0722/ii-DYNAMiC`.
+  - Set `FALLBACK_URL="https://github.com/imyash0722/ii-DYNAMiC"` and `FALLBACK_BRANCH="dev"`.
   - Preserved canonical fallback resolution for legacy URL `https://github.com/imyash0722/ii-p3drovfx-dynamic-island`.
   - Updated `upstream` and `p3drovfx` preset branches to `dev`.
 - **Protected Files Extension**:
@@ -31,7 +31,7 @@ Adapted `setup-ii-p3drovfx.sh`, `ShellUpdates.qml`, `AboutConfig.qml`, and `READ
   - Updated `ShellUpdates.qml` to display `ii-DYNAMiC$` for the active fork.
   - Dynamically bound "This fork" and GitHub links in `AboutConfig.qml` and `WelcomeProjectLinks.qml` to the active remote repository.
 - **Clone Instructions**:
-  - Updated main `README.md` and `.github/README.md` install instructions to clone `https://github.com/imyash0722/ii-DYNAMiC-.git`.
+  - Updated main `README.md` and `.github/README.md` install instructions to clone `https://github.com/imyash0722/ii-DYNAMiC.git`.
 
 ---
 

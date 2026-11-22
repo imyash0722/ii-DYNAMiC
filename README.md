@@ -73,8 +73,8 @@ A customized fork of **[ii-p3drovfx](https://github.com/P3DROVFX/ii-p3drovfx)** 
 Installs the base dotfiles and applies the **ii-DYNAMiC$** configuration:
 
 ```bash
-git clone --recurse-submodules https://github.com/imyash0722/ii-DYNAMiC-.git
-cd ii-DYNAMiC-
+git clone --recurse-submodules https://github.com/imyash0722/ii-DYNAMiC.git
+cd ii-DYNAMiC
 ./setup-ii-p3drovfx.sh install
 ```
 
@@ -83,8 +83,8 @@ cd ii-DYNAMiC-
 If you already have illogical-impulse dotfiles configured and only want the shell:
 
 ```bash
-git clone --recurse-submodules https://github.com/imyash0722/ii-DYNAMiC-.git
-cd ii-DYNAMiC-
+git clone --recurse-submodules https://github.com/imyash0722/ii-DYNAMiC.git
+cd ii-DYNAMiC
 ./setup-ii-p3drovfx.sh
 ```
 
