@@ -127,7 +127,6 @@ def apply_monitors_live(monitors):
     write_monitors_json(monitors)
 
     try:
-        subprocess.run(["hyprctl", "eval", 'dofile(os.getenv("HOME") .. "/.config/hypr/hyprmon.lua")'], capture_output=True, timeout=2)
         subprocess.run(["hyprctl", "reload"], capture_output=True, timeout=3)
     except Exception as e:
         sys.stderr.write(f"Error reloading Hyprland monitors: {e}\n")

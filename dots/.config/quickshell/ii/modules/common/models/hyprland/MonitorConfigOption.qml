@@ -194,7 +194,7 @@ NestableObject {
 
     Timer {
         id: delayFetchTimer
-        interval: 200
+        interval: 500
         repeat: false
         onTriggered: {
             fetchProc.running = true;
@@ -256,6 +256,7 @@ NestableObject {
     function saveToHyprland() {
         if (saveToHyprlandProc.running)
             return;
+        debounceSaveTimer.stop();
         if (root.monitors.length === 0 || root.monitors.some(m => !m.name))
             return;
 
