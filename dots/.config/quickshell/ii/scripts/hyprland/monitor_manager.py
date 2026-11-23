@@ -84,6 +84,7 @@ def write_monitors_json(monitors):
     os.makedirs(hypr_dir, exist_ok=True)
     json_file = os.path.join(hypr_dir, "monitors.json")
 
+    has_explicit_primary = any(m.get("IsPrimary") or m.get("isPrimary") for m in monitors)
     mon_map = {}
     for idx, m in enumerate(monitors):
         name = m.get("name")
@@ -96,6 +97,7 @@ def write_monitors_json(monitors):
         x = m.get("X") if m.get("X") is not None else m.get("x", 0)
         y = m.get("Y") if m.get("Y") is not None else m.get("y", 0)
         transform = m.get("Transform") if m.get("Transform") is not None else m.get("transform", 0)
+        is_prim = bool(m.get("IsPrimary") or m.get("isPrimary")) if has_explicit_primary else (idx == 0)
 
         mon_map[name] = {
             "resolution": f"{w}x{h}",
@@ -104,7 +106,7 @@ def write_monitors_json(monitors):
             "rotation": int(transform),
             "position_x": int(x),
             "position_y": int(y),
-            "is_primary": (idx == 0)
+            "is_primary": is_prim
         }
 
     data = {

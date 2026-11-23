@@ -132,6 +132,26 @@ ContentPage {
             visible: rectRoot.isSelected && !rectRoot.isDragging
         }
 
+        Row {
+            anchors.top: parent.top
+            anchors.right: parent.right
+            anchors.margins: 6
+            visible: Boolean(rectRoot.monitor && rectRoot.monitor.isPrimary)
+            spacing: 2
+            z: 10
+            MaterialSymbol {
+                text: "star"
+                iconSize: 11
+                color: Appearance.colors.colPrimary
+            }
+            StyledText {
+                text: Translation.tr("Primary")
+                font.pixelSize: 9
+                font.weight: Font.Bold
+                color: Appearance.colors.colPrimary
+            }
+        }
+
         Column {
             anchors.centerIn: parent
             spacing: rectRoot.height < 64 ? 1 : 3
@@ -862,6 +882,29 @@ ContentPage {
                                 });
                                 monitorConfig.applyAndSave(monitorCanvas.selectedIndex);
                             }
+                        }
+                    }
+                }
+
+                ConfigSwitch {
+                    id: monitorPrimarySwitch
+                    Layout.fillWidth: true
+                    buttonIcon: checked ? "star" : "star_outline"
+                    text: Translation.tr("Primary Display")
+                    description: checked ? Translation.tr("Main display (bar & priority)") : Translation.tr("Set as main display")
+
+                    readonly property bool isCurrentPrimary: Boolean(page.selectedMonitor && page.selectedMonitor.isPrimary)
+                    checked: isCurrentPrimary
+
+                    Binding {
+                        target: monitorPrimarySwitch
+                        property: "checked"
+                        value: monitorPrimarySwitch.isCurrentPrimary
+                    }
+
+                    onCheckedChanged: {
+                        if (checked && monitorCanvas.selectedIndex >= 0 && !monitorPrimarySwitch.isCurrentPrimary) {
+                            monitorConfig.setPrimaryMonitor(monitorCanvas.selectedIndex);
                         }
                     }
                 }

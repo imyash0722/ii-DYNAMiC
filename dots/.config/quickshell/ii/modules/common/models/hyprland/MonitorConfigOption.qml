@@ -35,6 +35,18 @@ NestableObject {
         root.monitors = m;
     }
 
+    function setPrimaryMonitor(index) {
+        if (!root.monitors || index < 0 || index >= root.monitors.length)
+            return;
+        let m = root.monitors.slice().map((mon, i) => {
+            let copy = Object.assign({}, mon);
+            copy.isPrimary = (i === index);
+            return copy;
+        });
+        root.monitors = m;
+        root.save();
+    }
+
     Timer {
         id: debounceSaveTimer
         interval: 150
@@ -118,15 +130,36 @@ NestableObject {
 
     Process {
         id: fetchProc
-        command: ["hyprctl", "monitors", "all", "-j"]
+        command: ["bash", "-c", "hyprctl monitors all -j && printf '\\n---SPLIT---\\n' && cat ~/.config/hypr/monitors.json 2>/dev/null || true"]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
-                    root.monitors = JSON.parse(text).map(m => {
+                    const parts = text.split("\n---SPLIT---\n");
+                    const monitorsRaw = JSON.parse(parts[0]);
+                    let savedPrimaryName = "";
+                    if (parts.length > 1 && parts[1].trim().length > 0) {
+                        try {
+                            const savedData = JSON.parse(parts[1].trim());
+                            const wsList = savedData.workspaces || [];
+                            if (wsList.length > 0 && wsList[0].monitors) {
+                                for (const [k, v] of Object.entries(wsList[0].monitors)) {
+                                    if (v && v.is_primary) {
+                                        savedPrimaryName = k;
+                                        break;
+                                    }
+                                }
+                            }
+                        } catch (e2) {}
+                    }
+                    const curPrimary = (root.monitors || []).find(m => m && m.isPrimary)?.name;
+                    const primaryName = curPrimary || savedPrimaryName;
+
+                    root.monitors = monitorsRaw.map((m, idx) => {
                         // A custom mode (a headless output's, like the phone as a monitor)
                         // is not among the modes the output lists: offer it too.
                         const current = `${m.width}x${m.height}@${m.refreshRate.toFixed(2)}Hz`;
                         const modes = m.availableModes ?? [];
+                        const isPrim = primaryName ? (m.name === primaryName || (m.description && primaryName.indexOf(m.description) !== -1)) : (idx === 0);
                         return {
                                 name: m.name,
                                 description: m.description,
@@ -138,6 +171,7 @@ NestableObject {
                                 scale: m.scale,
                                 transform: (m.transform !== undefined && m.transform !== null) ? m.transform : 0,
                                 disabled: m.disabled,
+                                isPrimary: isPrim,
                                 availableModes: modes.includes(current) ? modes : [current].concat(modes),
                                 currentMode: current,
                                 mirrorOf: m.mirrorOf || "none",
@@ -237,6 +271,7 @@ NestableObject {
                     X: m.x,
                     Y: m.y,
                     Active: !m.disabled,
+                    IsPrimary: m.isPrimary === true,
                     BitDepth: m.bitDepth || 8,
                     ColorMode: m.colorManagementPreset || "srgb",
                     SDRBrightness: m.sdrBrightness !== undefined ? m.sdrBrightness : 1.0,
