@@ -17,8 +17,8 @@ local qsIsAlive = qsIpcCall .. " TEST_ALIVE"
 -- bind is shadowed by any key pressed in between, so only a lone tap reaches it.
 hl.bind("SUPER + SUPER_L", hl.dsp.global("quickshell:dynamicIslandDashboardToggleRelease"), { release = true, description = "Dynamic Island: Toggle widgets dashboard" })
 hl.bind("SUPER + SUPER_R", hl.dsp.global("quickshell:dynamicIslandDashboardToggleRelease"), { release = true })
-hl.bind("SUPER + SUPER_L", hl.dsp.exec_cmd(qsIsAlive .. " || " .. qsIpcCall .. " dynamicIsland toggleDashboard || pkill fuzzel || fuzzel"), { release = true })
-hl.bind("SUPER + SUPER_R", hl.dsp.exec_cmd(qsIsAlive .. " || " .. qsIpcCall .. " dynamicIsland toggleDashboard || pkill fuzzel || fuzzel"), { release = true })
+hl.bind("SUPER + SUPER_L", hl.dsp.exec_cmd("pidof qs >/dev/null || pkill fuzzel || fuzzel"), { release = true })
+hl.bind("SUPER + SUPER_R", hl.dsp.exec_cmd("pidof qs >/dev/null || pkill fuzzel || fuzzel"), { release = true })
 
 hl.bind("SUPER_L", hl.dsp.global("quickshell:workspaceNumber"), { ignore_mods = true, transparent = true })
 hl.bind("SUPER_R", hl.dsp.global("quickshell:workspaceNumber"), { ignore_mods = true, transparent = true })

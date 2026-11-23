@@ -473,6 +473,8 @@ Scope {
         const text = String(event.text ?? "");
         if (text.length > 0 && text.trim().length > 0) {
             root.dismissDashboard();
+            GlobalStates.superReleaseMightTrigger = false;
+            GlobalStates.lastOverviewToggleTime = Date.now();
             GlobalStates.activeSearchQuery = text;
             GlobalStates.openSearch();
             event.accepted = true;
@@ -2192,6 +2194,10 @@ Scope {
 
             Keys.onReleased: event => {
                 if (event.key === Qt.Key_Super_L || event.key === Qt.Key_Super_R || event.key === Qt.Key_Meta) {
+                    if (Date.now() - GlobalStates.lastOverviewToggleTime < 450) {
+                        event.accepted = true;
+                        return;
+                    }
                     if (root.searchActive || GlobalStates.overviewOpen)
                         root.collapseToClock();
                     else if (root.dashboardActive)
@@ -2271,6 +2277,12 @@ Scope {
                     win.grabSuspended = true;
                     grabRearm.restart();
                 } else if (root.searchActive) {
+                    if (Date.now() - GlobalStates.lastOverviewToggleTime < 450)
+                        return;
+                    if (fullWindow && fullWindow.Window && fullWindow.Window.active)
+                        return;
+                    if (root.hovered || hoverIntent.hovered || (notchContent && notchContent.searchItem && notchContent.searchItem.searchInputFocused))
+                        return;
                     GlobalStates.closeOverview();
                 }
             }
@@ -2293,7 +2305,11 @@ Scope {
         // editing: it pins the island against the pointer leaving, not against a click.
         // The wallpaper browser needs it too: the surface is only OnDemand, so
         // without the grab it had no keyboard until it was clicked.
-        readonly property bool grabWanted: root.searchActive || root.sessionActive || root.wallpaperActive
+        readonly property bool isSearchMonitor: GlobalStates.activeSearchMonitor === ""
+            || (win.screen && win.screen.name === GlobalStates.activeSearchMonitor)
+            || (root.targetScreen && root.targetScreen.name === GlobalStates.activeSearchMonitor)
+
+        readonly property bool grabWanted: (root.searchActive && win.isSearchMonitor) || root.sessionActive || root.wallpaperActive
             || (root.dashboardActive && !notchContent.dashboardGridEditing)
             || (root.askpassActive && root.askpassFocused)
 
@@ -2464,6 +2480,10 @@ Scope {
 
             Keys.onReleased: event => {
                 if (event.key === Qt.Key_Super_L || event.key === Qt.Key_Super_R || event.key === Qt.Key_Meta) {
+                    if (Date.now() - GlobalStates.lastOverviewToggleTime < 450) {
+                        event.accepted = true;
+                        return;
+                    }
                     if (root.searchActive || GlobalStates.overviewOpen)
                         root.collapseToClock();
                     else if (root.dashboardActive)

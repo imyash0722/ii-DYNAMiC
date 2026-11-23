@@ -822,6 +822,7 @@ Scope {
 
     function togglePrefixedSearch(prefix) {
         GlobalStates.superReleaseMightTrigger = false;
+        GlobalStates.lastOverviewToggleTime = Date.now();
         if (GlobalStates.overviewUsesAppDrawer) {
             const panel = SearchPanelRegistry.resolve(prefix);
             if (panel)
