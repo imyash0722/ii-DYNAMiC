@@ -141,6 +141,11 @@ def apply_monitors_live(monitors):
         except Exception as e:
             sys.stderr.write(f"Error applying monitor {name}: {e}\n")
 
+    try:
+        subprocess.run(["hyprctl", "reload"], capture_output=True, timeout=3)
+    except Exception as e:
+        sys.stderr.write(f"Error reloading Hyprland: {e}\n")
+
 
 def save_profile_file(profile_name, profile_dict):
     profiles_dir = os.path.join(get_hyprmon_dir(), "profiles")

@@ -45,9 +45,39 @@ if is_file_exists(HOME .. "/.config/hypr/custom/keybinds.lua") then
     safe_require("custom.keybinds")
 end
 
-if is_file_exists(HOME .. "/.config/hypr/hyprmon.lua") then
-    require("hyprmon")
+-- Monitor configurations (hyprmon / displays config) --
+local function load_monitors()
+    local hyprmon_lua = HOME .. "/.config/hypr/hyprmon.lua"
+    if is_file_exists(hyprmon_lua) then
+        local ok, err = pcall(dofile, hyprmon_lua)
+        if ok then return end
+    end
+
+    local monitors_conf = HOME .. "/.config/hypr/monitors.conf"
+    if is_file_exists(monitors_conf) then
+        local f = io.open(monitors_conf, "r")
+        if f then
+            for line in f:lines() do
+                local m = line:match("^%s*monitor%s*=%s*(.+)")
+                if m then
+                    local parts = {}
+                    for p in m:gmatch("[^,]+") do
+                        table.insert(parts, p:match("^%s*(.-)%s*$"))
+                    end
+                    local out = parts[1] or ""
+                    local mode = parts[2] or "preferred"
+                    local pos = parts[3] or "auto"
+                    local scale = parts[4] or "1"
+                    if out ~= "" and mode ~= "disable" then
+                        hl.monitor({ output = out, mode = mode, position = pos, scale = scale })
+                    end
+                end
+            end
+            f:close()
+        end
+    end
 end
+load_monitors()
 
 -- Shell overrides --
 safe_require("hyprland.shellOverrides.main")
