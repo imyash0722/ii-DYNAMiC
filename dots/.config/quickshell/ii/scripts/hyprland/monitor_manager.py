@@ -122,29 +122,15 @@ def write_monitors_json(monitors):
 
 
 def apply_monitors_live(monitors):
-    for m in monitors:
-        name = m.get("name")
-        if not name or m.get("disabled") or not m.get("Active", True):
-            continue
-        w = m.get("PxW") or m.get("width")
-        h = m.get("PxH") or m.get("height")
-        hz = m.get("Hz") or m.get("refreshRate") or 60.0
-        scale = m.get("Scale") or m.get("scale") or 1.0
-        x = m.get("X") if m.get("X") is not None else m.get("x", 0)
-        y = m.get("Y") if m.get("Y") is not None else m.get("y", 0)
-
-        mode_str = f"{w}x{h}@{hz}" if w and h else "preferred"
-        pos_str = f"{x}x{y}"
-        cmd = f'hl.monitor({{ output = "{name}", mode = "{mode_str}", position = "{pos_str}", scale = "{scale}" }})'
-        try:
-            subprocess.run(["hyprctl", "eval", cmd], capture_output=True, timeout=2)
-        except Exception as e:
-            sys.stderr.write(f"Error applying monitor {name}: {e}\n")
+    write_hyprmon_lua(monitors)
+    write_monitors_conf(monitors)
+    write_monitors_json(monitors)
 
     try:
+        subprocess.run(["hyprctl", "eval", 'dofile(os.getenv("HOME") .. "/.config/hypr/hyprmon.lua")'], capture_output=True, timeout=2)
         subprocess.run(["hyprctl", "reload"], capture_output=True, timeout=3)
     except Exception as e:
-        sys.stderr.write(f"Error reloading Hyprland: {e}\n")
+        sys.stderr.write(f"Error reloading Hyprland monitors: {e}\n")
 
 
 def save_profile_file(profile_name, profile_dict):
