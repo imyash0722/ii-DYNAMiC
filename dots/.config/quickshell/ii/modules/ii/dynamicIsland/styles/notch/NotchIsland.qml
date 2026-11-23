@@ -194,11 +194,8 @@ Scope {
         && (root.dashboardRequested || root.pagedId === "dashboard" || root.dashboardPinned
             || (root.expanded && (!root.hasExpanded || root.dashboardClicked)))
 
-    Binding {
-        target: GlobalStates
-        property: "islandDashboardOpen"
-        value: root.dashboardActive
-        restoreMode: Binding.RestoreBindingOrValue
+    Component.onDestruction: {
+        GlobalStates.setIslandDashboardActiveForScreen(root.targetScreen?.name ?? "", false);
     }
 
     /**
@@ -246,6 +243,16 @@ Scope {
      * is the same move a click away makes.
      */
     function openDashboard() {
+        if (GlobalStates.islandDashboardOpen || GlobalStates._islandDashboardWasOpenOnToggle)
+            return;
+        const focusedName = Hyprland.focusedMonitor?.name ?? "";
+        const screenName = root.targetScreen?.name ?? "";
+        const isFocused = Quickshell.screens.length <= 1
+            || (focusedName !== "" && focusedName === screenName)
+            || (focusedName === "" && root.isPrimaryIsland);
+        if (!isFocused)
+            return;
+
         root.preferClockFace = false;
         root.expandSuppressed = false;
         root.dashboardRequested = true;
@@ -275,12 +282,7 @@ Scope {
                 root.dismissDashboard();
             }
             function toggleDashboard(): void {
-                if (root.searchActive || GlobalStates.overviewOpen)
-                    root.collapseToClock();
-                else if (root.dashboardActive)
-                    root.dismissDashboard();
-                else
-                    root.openDashboard();
+                GlobalStates.toggleDynamicIslandDashboard();
             }
         }
     }
@@ -1989,6 +1991,7 @@ Scope {
     onWallpaperActiveChanged: if (root.wallpaperActive) root.expandedBubbleId = ""
     onSessionActiveChanged: if (root.sessionActive) root.expandedBubbleId = ""
     onDashboardActiveChanged: {
+        GlobalStates.setIslandDashboardActiveForScreen(root.targetScreen?.name ?? "", root.dashboardActive);
         if (root.dashboardActive) {
             root.expandedBubbleId = "";
             Qt.callLater(() => {

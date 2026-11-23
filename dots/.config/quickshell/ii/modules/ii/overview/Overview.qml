@@ -951,6 +951,8 @@ Scope {
         description: "Toggles overview on press"
 
         onPressed: {
+            GlobalStates.superReleaseMightTrigger = false;
+            GlobalStates.lastOverviewToggleTime = Date.now();
             GlobalStates.toggleOverview();
         }
     }

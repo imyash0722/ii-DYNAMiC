@@ -421,6 +421,7 @@ Scope {
         description: "Toggles session screen on press"
 
         onPressed: {
+            GlobalStates.superReleaseMightTrigger = false;
             GlobalStates.sessionOpen = !GlobalStates.sessionOpen;
         }
     }

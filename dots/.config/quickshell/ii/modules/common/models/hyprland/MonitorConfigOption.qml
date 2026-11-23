@@ -74,7 +74,7 @@ NestableObject {
 
         const jsonStr = buildProfileJson("__quickshell_live__");
 
-        saveProc.command = ["bash", "-c", "mkdir -p ~/.config/hyprmon/profiles && cat << 'EOF' > ~/.config/hyprmon/profiles/__quickshell_live__.json\n" + jsonStr + "\nEOF\nhyprmon -profile __quickshell_live__ && mkdir -p ~/.config/hypr/hyprmon_backups && mv ~/.config/hypr/*.bak.* ~/.config/hypr/hyprmon_backups/ 2>/dev/null || true; ls -t ~/.config/hypr/hyprmon_backups/*.bak.* 2>/dev/null | tail -n +21 | xargs rm -f 2>/dev/null || true"];
+        saveProc.command = ["python3", Quickshell.shellPath("scripts/hyprland/monitor_manager.py"), "--profile-json", jsonStr, "--apply"];
         saveProc.running = true;
     }
 
@@ -99,7 +99,7 @@ NestableObject {
     }
 
     function applyProfile(name) {
-        applyProfileProc.command = ["bash", "-c", "hyprmon -profile \"$1\" && mkdir -p ~/.config/hypr/hyprmon_backups && mv ~/.config/hypr/*.bak.* ~/.config/hypr/hyprmon_backups/ 2>/dev/null || true; ls -t ~/.config/hypr/hyprmon_backups/*.bak.* 2>/dev/null | tail -n +21 | xargs rm -f 2>/dev/null || true", "--", name];
+        applyProfileProc.command = ["python3", Quickshell.shellPath("scripts/hyprland/monitor_manager.py"), "--apply-profile", name];
         applyProfileProc.running = true;
     }
 
@@ -112,7 +112,7 @@ NestableObject {
         if (!name)
             return;
         const jsonStr = buildProfileJson(name);
-        saveProfileProc.command = ["bash", "-c", "mkdir -p ~/.config/hyprmon/profiles && cat << 'EOF' > ~/.config/hyprmon/profiles/\"$1\".json\n$2\nEOF", "--", name, jsonStr];
+        saveProfileProc.command = ["python3", Quickshell.shellPath("scripts/hyprland/monitor_manager.py"), "--profile-json", jsonStr, "--save-profile", name];
         saveProfileProc.running = true;
     }
 
@@ -171,7 +171,7 @@ NestableObject {
 
     Process {
         id: profilesProc
-        command: ["hyprmon", "-list-profiles"]
+        command: ["python3", Quickshell.shellPath("scripts/hyprland/monitor_manager.py"), "--list-profiles"]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
@@ -268,7 +268,7 @@ NestableObject {
         const liveJson = buildProfileJson("__quickshell_live__");
         const defaultJson = buildProfileJson("default");
 
-        saveToHyprlandProc.command = ["bash", "-c", "mkdir -p ~/.config/hyprmon/profiles && cat << 'EOF' > ~/.config/hyprmon/profiles/__quickshell_live__.json\n" + liveJson + "\nEOF\ncat << 'EOF' > ~/.config/hyprmon/profiles/default.json\n" + defaultJson + "\nEOF\nhyprmon -profile default && notify-send 'Monitors' 'Saved permanently to Hyprland via Hyprmon!' -t 3000"];
+        saveToHyprlandProc.command = ["bash", "-c", "python3 " + Quickshell.shellPath("scripts/hyprland/monitor_manager.py") + " --profile-json '" + defaultJson.replace(/'/g, "'\\''") + "' --save-profile default --apply && notify-send 'Monitors' 'Saved permanently to Hyprland!' -t 3000"];
         saveToHyprlandProc.running = true;
     }
 

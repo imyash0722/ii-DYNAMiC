@@ -1121,13 +1121,20 @@ Singleton {
     signal collapseIslandRequested()
     function collapseDynamicIsland(): void {
         root.superDown = false;
+        root.islandDashboardMonitors = [];
+        root.islandDashboardOpen = false;
         collapseIslandRequested();
     }
 
     // Dynamic Island widgets dashboard coordination
     signal toggleIslandDashboardRequested()
+    property bool _islandDashboardWasOpenOnToggle: false
     function toggleDynamicIslandDashboard(): void {
+        root._islandDashboardWasOpenOnToggle = root.islandDashboardOpen;
         toggleIslandDashboardRequested();
+        Qt.callLater(() => {
+            root._islandDashboardWasOpenOnToggle = false;
+        });
     }
 
     // The live docks, newest last: the Settings dock preview reads the first one's
@@ -2949,7 +2956,40 @@ Singleton {
 
     /** Whether the island, rather than the right sidebar, holds the quick settings. */
     property bool islandOwnsDashboard: false
+    property var islandDashboardMonitors: []
     property bool islandDashboardOpen: false
+
+    function setIslandDashboardActiveForScreen(screenName: string, active: bool): void {
+        if (!screenName)
+            return;
+        let list = (root.islandDashboardMonitors ?? []).slice();
+        const index = list.indexOf(screenName);
+        if (active && index === -1) {
+            list.push(screenName);
+        } else if (!active && index !== -1) {
+            list.splice(index, 1);
+        }
+        root.islandDashboardMonitors = list;
+        root.islandDashboardOpen = list.length > 0;
+    }
+
+    onIslandDashboardOpenChanged: {
+        if (!root.islandDashboardOpen && (root.islandDashboardMonitors ?? []).length > 0)
+            root.islandDashboardMonitors = [];
+    }
+
+    // When any primary app window or launcher surface opens, suppress stray Super release triggers
+    property double lastOverviewToggleTime: 0
+    onWallpaperSelectorOpenChanged: if (root.wallpaperSelectorOpen) { root.superReleaseMightTrigger = false; root.lastOverviewToggleTime = Date.now(); }
+    onSessionOpenChanged: if (root.sessionOpen) { root.superReleaseMightTrigger = false; root.lastOverviewToggleTime = Date.now(); }
+    onSettingsOpenChanged: if (root.settingsOpen) { root.superReleaseMightTrigger = false; root.lastOverviewToggleTime = Date.now(); }
+    onNotesAppOpenChanged: if (root.notesAppOpen) { root.superReleaseMightTrigger = false; root.lastOverviewToggleTime = Date.now(); }
+    onClockAppOpenChanged: if (root.clockAppOpen) { root.superReleaseMightTrigger = false; root.lastOverviewToggleTime = Date.now(); }
+    onEasyEffectsAppOpenChanged: if (root.easyEffectsAppOpen) { root.superReleaseMightTrigger = false; root.lastOverviewToggleTime = Date.now(); }
+    onUsageOpenChanged: if (root.usageOpen) { root.superReleaseMightTrigger = false; root.lastOverviewToggleTime = Date.now(); }
+    onModesOpenChanged: if (root.modesOpen) { root.superReleaseMightTrigger = false; root.lastOverviewToggleTime = Date.now(); }
+    onHealthAppOpenChanged: if (root.healthAppOpen) { root.superReleaseMightTrigger = false; root.lastOverviewToggleTime = Date.now(); }
+    onCheatsheetOpenChanged: if (root.cheatsheetOpen) { root.superReleaseMightTrigger = false; root.lastOverviewToggleTime = Date.now(); }
 
     function openIslandPage(pageId) {
         root.islandDashboardPage = pageId;
@@ -3455,6 +3495,10 @@ Singleton {
     }
 
     onOverviewOpenChanged: {
+        if (root.overviewOpen) {
+            root.superReleaseMightTrigger = false;
+            root.lastOverviewToggleTime = Date.now();
+        }
         if (root.overviewUsesAppDrawer) {
             // overviewOpen remains the compatibility boundary for existing
             // callers. Mirror it into the selected implementation, while
@@ -3724,7 +3768,8 @@ Singleton {
         property int _lastToggleTime: 0
 
         onPressed: {
-            root.superReleaseMightTrigger = true;
+            // Note: workspaceNumber arms superReleaseMightTrigger on key down.
+            // Do not re-arm here since release binds trigger onPressed on key release.
         }
 
         onReleased: {
@@ -3732,6 +3777,9 @@ Singleton {
             if (now - _lastToggleTime < 50)
                 return;
             _lastToggleTime = now;
+
+            if (now - root.lastOverviewToggleTime < 450)
+                return;
 
             if (!root.superReleaseMightTrigger) {
                 root.superReleaseMightTrigger = true;

@@ -104,6 +104,7 @@ Scope {
         name: "wallpaperSelectorToggle"
         description: "Toggle wallpaper selector"
         onPressed: {
+            GlobalStates.superReleaseMightTrigger = false;
             root.toggleWallpaperSelector();
         }
     }
