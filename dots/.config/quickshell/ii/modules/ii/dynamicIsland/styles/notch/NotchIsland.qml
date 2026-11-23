@@ -194,10 +194,6 @@ Scope {
         && (root.dashboardRequested || root.pagedId === "dashboard" || root.dashboardPinned
             || (root.expanded && (!root.hasExpanded || root.dashboardClicked)))
 
-    Component.onDestruction: {
-        GlobalStates.setIslandDashboardActiveForScreen(root.targetScreen?.name ?? "", false);
-    }
-
     /**
      * Editing the dashboard holds it open: the pointer leaving to reach the tray or a
      * resize handle must not collapse the island in the middle of an edit.
@@ -1867,6 +1863,7 @@ Scope {
             root.collapseToClock();
     }
     Component.onDestruction: {
+        GlobalStates.setIslandDashboardActiveForScreen(root.targetScreen?.name ?? "", false);
         if (GlobalStates.islandWindow === win)
             GlobalStates.islandWindow = null;
         if (root.centerInBar) {
