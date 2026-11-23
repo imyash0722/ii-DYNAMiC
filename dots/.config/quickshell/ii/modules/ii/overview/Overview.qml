@@ -486,6 +486,7 @@ Scope {
                                         overviewScope.dontAutoCancelSearch = false;
                                     }
                                     root.consumePendingSearchQuery();
+                                    searchWidget.focusSearchInput();
                                     delayedGrabTimer.start();
                                 }
                             }
@@ -747,6 +748,18 @@ Scope {
                                             return;
                                         }
                                         GlobalStates.overviewOpen = false;
+                                        return;
+                                    }
+                                    if (event.modifiers & Qt.ControlModifier || event.modifiers & Qt.AltModifier || event.modifiers & Qt.MetaModifier)
+                                        return;
+                                    if (event.key === Qt.Key_Tab || event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Backspace || event.key === Qt.Key_Delete)
+                                        return;
+                                    const text = String(event.text ?? "");
+                                    if (text.length > 0 && text.charCodeAt(0) >= 0x20) {
+                                        searchWidget.focusSearchInput();
+                                        const cur = searchWidget.searchingText || "";
+                                        searchWidget.setSearchingText(cur + text);
+                                        event.accepted = true;
                                     }
                                 }
 

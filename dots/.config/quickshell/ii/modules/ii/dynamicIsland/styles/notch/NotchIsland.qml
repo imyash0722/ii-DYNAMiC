@@ -462,8 +462,39 @@ Scope {
      * the island immediately transitions to Search, seeds the query, and focuses the field.
      */
     function handleDashboardTypeToSearch(event) {
-        if (!root.dashboardActive || root.searchActive)
+        if (!root.dashboardActive || root.searchActive) {
+            if (root.searchActive) {
+                if (event.modifiers & Qt.ControlModifier || event.modifiers & Qt.AltModifier || event.modifiers & Qt.MetaModifier)
+                    return false;
+                if (event.key === Qt.Key_Escape || event.key === Qt.Key_Tab || event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Delete)
+                    return false;
+                if (notchContent && notchContent.searchItem) {
+                    notchContent.searchItem.focusSearchInput();
+                    if (event.key === Qt.Key_Backspace) {
+                        const input = notchContent.searchItem.searchBar?.searchInput;
+                        if (input && input.text.length > 0) {
+                            notchContent.searchItem.setSearchingText(input.text.slice(0, -1));
+                            event.accepted = true;
+                            return true;
+                        }
+                        return false;
+                    }
+                    const text = String(event.text ?? "");
+                    if (text.length > 0 && text.charCodeAt(0) >= 0x20) {
+                        if (GlobalStates.activeSearchQuery.length > 0) {
+                            GlobalStates.activeSearchQuery += text;
+                        } else {
+                            const input = notchContent.searchItem.searchBar?.searchInput;
+                            const cur = input ? input.text : (notchContent.searchItem.searchingText || "");
+                            notchContent.searchItem.setSearchingText(cur + text);
+                        }
+                        event.accepted = true;
+                        return true;
+                    }
+                }
+            }
             return false;
+        }
         if (notchContent.dashboardGridEditing || notchContent.dashboardWantsKeyboard || notchContent.pendingPage.pageId !== "")
             return false;
         if (event.modifiers & Qt.ControlModifier || event.modifiers & Qt.AltModifier || event.modifiers & Qt.MetaModifier)

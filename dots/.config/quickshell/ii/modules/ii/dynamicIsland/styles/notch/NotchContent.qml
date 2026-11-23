@@ -766,12 +766,16 @@ Item {
                 if (!searchLoader.item)
                     return;
                 if (GlobalStates.activeSearchQuery) {
-                    searchLoader.item.setSearchingText(GlobalStates.activeSearchQuery);
+                    const incoming = GlobalStates.activeSearchQuery;
                     GlobalStates.activeSearchQuery = "";
+                    searchLoader.item.setSearchingText(incoming);
                 } else if (GlobalStates.searchPendingPanel !== "") {
                     searchLoader.item.consumePanelIntent();
                 } else if (!GlobalStates.searchPanelActive && searchLoader.item.requestedPanelId === "") {
-                    searchLoader.item.cancelSearch();
+                    const hasLiveText = (searchLoader.item.searchingText && searchLoader.item.searchingText.length > 0)
+                        || (searchLoader.item.searchBar && searchLoader.item.searchBar.searchInput && searchLoader.item.searchBar.searchInput.text.length > 0);
+                    if (!hasLiveText)
+                        searchLoader.item.cancelSearch();
                 }
             }
 
@@ -792,6 +796,18 @@ Item {
                     return;
                 searchLoader.queryTaken = true;
                 searchLoader.takeQuery();
+                searchLoader.item.focusSearchInput();
+            }
+
+            Connections {
+                target: GlobalStates
+                ignoreUnknownSignals: true
+                function onActiveSearchQueryChanged() {
+                    if (GlobalStates.activeSearchQuery && searchLoader.item) {
+                        searchLoader.takeQuery();
+                        searchLoader.item.focusSearchInput();
+                    }
+                }
             }
 
             onVisibleChanged: {
